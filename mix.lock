@@ -1,0 +1,7 @@
+%{
+  "hamcrest": {:hex, :basho_hamcrest, "0.4.1", "fb7b2c92d252a1e9db936750b86089addaebeb8f87967fb4bbdda61e8863338e", [:make, :mix, :rebar3], [], "hexpm", "26974025bc61bc09ef5b13be5dce5035ca11bf37bf4a865e9d86c455c942298f"},
+  "pooler": {:hex, :pooler, "1.5.3", "898cd1fa301fc42d4a8ed598ce139b71ca85b54c16ab161152b5cc5fbdcfa1a8", [:rebar3], [], "hexpm", "058d85c5081289b90e97e4dddbc3bb5a3b4a19a728ab3bc88c689efcc36a07c7"},
+  "riak": {:hex, :riak, "1.1.6", "e69c48ef5c19b98484ac9dc5ee84a414f676bdceb55ffd5fa9e0fbbad4842fb5", [:mix], [{:pooler, "~> 1.5.3", [hex: :pooler, repo: "hexpm", optional: false]}, {:riakc, "~> 2.5.3", [hex: :riakc, repo: "hexpm", optional: false]}], "hexpm", "4d7a1c876e5ad16372c3f0309a640a58fd3ea38d6b475c44cac1baa96106b176"},
+  "riak_pb": {:hex, :riak_pb, "2.3.2", "48ffbf66dbb3f136ab9a7134bac4e496754baa5ef58c4f50a61326736d996390", [:make, :mix, :rebar3], [{:hamcrest, "~> 0.4.1", [hex: :basho_hamcrest, repo: "hexpm", optional: false]}], "hexpm", "7c0644bcba8a423dd9c1ab85b6e7ff4df0712d8a350f9698647cff1996f0348c"},
+  "riakc": {:hex, :riakc, "2.5.3", "6132d9e687a0dfd314b2b24c4594302ca8b55568a5d733c491d8fb6cd4004763", [:make, :mix, :rebar3], [{:riak_pb, "~> 2.3", [hex: :riak_pb, repo: "hexpm", optional: false]}], "hexpm", "32b3aced7b749bffd917153f68fa73c184b09b70ea6f37867db43dba273127bf"},
+}

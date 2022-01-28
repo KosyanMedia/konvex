@@ -19,6 +19,7 @@ defmodule Konvex.MixProject do
 
   defp deps do
     [
+      {:riak, "~> 1.1.6"}
     ]
   end
 end
