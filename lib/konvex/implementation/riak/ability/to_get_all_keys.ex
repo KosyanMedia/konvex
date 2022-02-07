@@ -6,7 +6,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetAllKeys do
   defmacro __using__(
              [
                bucket_name: <<_, _ :: binary>> = _bucket_name,
-               connection_provider: quoted_riak_connection_provider,
+               connection: quoted_riak_connection,
                key_aggregate_bucket_name: <<_, _ :: binary>> = key_aggregate_bucket_name,
                key_aggregate_bucket_key: <<_, _ :: binary>> = key_aggregate_bucket_key,
                set_type_name: <<_, _ :: binary>> = set_type_name
@@ -18,7 +18,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetAllKeys do
       defmodule Private.Implementation.Ability.ToGetTextSetValue do
         use Konvex.Implementation.Riak.Ability.ToGetTextSetValue,
             bucket_name: unquote(key_aggregate_bucket_name),
-            connection_provider: unquote(quoted_riak_connection_provider),
+            connection: unquote(quoted_riak_connection),
             set_type_name: unquote(set_type_name)
       end
 

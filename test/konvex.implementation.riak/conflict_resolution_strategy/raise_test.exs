@@ -68,7 +68,7 @@ defmodule Konvex.Implementation.Riak.ConflictResolutionStrategy.RaiseTest do
     use Konvex.Implementation.Riak.Ability.ToGetTextValue,
         bucket_name: "probe_bucket",
         conflict_resolution_strategy_module: Konvex.Implementation.Riak.ConflictResolutionStrategy.Raise,
-        connection_provider: Application.get_env(:konvex, :backend_mock_pid)
+        connection: Application.get_env(:konvex, :backend_mock_pid)
   end
 
   setup_all do

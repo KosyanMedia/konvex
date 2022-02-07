@@ -8,35 +8,40 @@ defmodule Konvex.Implementation.Riak.Ability.ToCheckKeyExists do
   defmacro __using__(
              [
                bucket_name: <<_, _ :: binary>> = bucket_name,
-               connection_provider: quoted_riak_connection_provider,
+               connection: quoted_riak_connection,
                crdt_name: <<_, _ :: binary>> = crdt_name,
                value_type: :crdt
              ]
            ) do
     quote do
-      alias Konvex.Implementation.Riak.Connection
+      import Konvex.Implementation.Riak.Connection.Usage, only: [using: 2]
 
       @behaviour Konvex.Ability.ToCheckKeyExists
 
       @impl Konvex.Ability.ToCheckKeyExists
       @spec key_exists?(key :: String.t) :: boolean
-      def key_exists?(key) when is_binary(key) do
-        connection_pid =
-          Connection.Provider.get_connection_pid(unquote(quoted_riak_connection_provider))
-        case Riak.find(
-               connection_pid,
-               unquote(crdt_name),
-               unquote(bucket_name),
-               key
-             ) do
-          nil ->
-            false
+      def key_exists?("" = _empty_key) do
+        # :riakc does not support empty keys, so no way to store such
+        false
+      end
 
-          {:error, some_reason_from_riakc_pb_socket_fetch_type} ->
-            raise "Failed to find #{unquote(bucket_name)}<#{unquote(crdt_name)}>:#{key} in Riak, :riakc_pb_socket.fetch_type responded: #{inspect some_reason_from_riakc_pb_socket_fetch_type}"
+      def key_exists?(<<_, _ :: binary>> = key) do
+        using unquote(quoted_riak_connection), fn connection_pid ->
+          case Riak.find(
+                 connection_pid,
+                 unquote(crdt_name),
+                 unquote(bucket_name),
+                 key
+               ) do
+            nil ->
+              false
 
-          _key_value_object ->
-            true
+            {:error, some_reason_from_riakc_pb_socket_fetch_type} ->
+              raise "Failed to find #{unquote(bucket_name)}<#{unquote(crdt_name)}>:#{key} in Riak, :riakc_pb_socket.fetch_type responded: #{inspect some_reason_from_riakc_pb_socket_fetch_type}"
+
+            _key_value_object ->
+              true
+          end
         end
       end
     end
@@ -45,33 +50,38 @@ defmodule Konvex.Implementation.Riak.Ability.ToCheckKeyExists do
   defmacro __using__(
              [
                bucket_name: <<_, _ :: binary>> = bucket_name,
-               connection_provider: quoted_riak_connection_provider,
+               connection: quoted_riak_connection,
                value_type: :text
              ]
            ) do
     quote do
-      alias Konvex.Implementation.Riak.Connection
+      import Konvex.Implementation.Riak.Connection.Usage, only: [using: 2]
 
       @behaviour Konvex.Ability.ToCheckKeyExists
 
       @impl Konvex.Ability.ToCheckKeyExists
       @spec key_exists?(key :: String.t) :: boolean
+      def key_exists?("" = _empty_key) do
+        # :riakc does not support empty keys, so no way to store such
+        false
+      end
+
       def key_exists?(key) when is_binary(key) do
-        connection_pid =
-          Connection.Provider.get_connection_pid(unquote(quoted_riak_connection_provider))
-        case Riak.find(
-               connection_pid,
-               unquote(bucket_name),
-               key
-             ) do
-          nil ->
-            false
+        using unquote(quoted_riak_connection), fn connection_pid ->
+          case Riak.find(
+                 connection_pid,
+                 unquote(bucket_name),
+                 key
+               ) do
+            nil ->
+              false
 
-          {:error, some_reason_from_riakc_pb_socket_get} ->
-            raise "Failed to find #{unquote(bucket_name)}:#{key} in Riak, :riakc_pb_socket.get responded: #{inspect some_reason_from_riakc_pb_socket_get}"
+            {:error, some_reason_from_riakc_pb_socket_get} ->
+              raise "Failed to find #{unquote(bucket_name)}:#{key} in Riak, :riakc_pb_socket.get responded: #{inspect some_reason_from_riakc_pb_socket_get}"
 
-          _key_value_object_or_siblings_list ->
-            true
+            _key_value_object_or_siblings_list ->
+              true
+          end
         end
       end
     end

@@ -8,7 +8,7 @@ defmodule Konvex.Implementation.Riak.TextBucketWithKeyValueAggregate do
              [
                bucket_name: <<_, _ :: binary>> = bucket_name,
                conflict_resolution_strategy_module: conflict_resolution_strategy_module,
-               connection_provider: quoted_riak_connection_provider,
+               connection: quoted_riak_connection,
                key_value_aggregate_bucket_name: <<_, _ :: binary>> = key_value_aggregate_bucket_name,
                key_value_aggregate_bucket_key: <<_, _ :: binary>> = key_value_aggregate_bucket_key,
                map_type_name: <<_, _ :: binary>> = map_type_name
@@ -21,43 +21,43 @@ defmodule Konvex.Implementation.Riak.TextBucketWithKeyValueAggregate do
 
       use Konvex.Implementation.Riak.Ability.ToCheckKeyExists,
           bucket_name: unquote(bucket_name),
-          connection_provider: unquote(quoted_riak_connection_provider),
+          connection: unquote(quoted_riak_connection),
           value_type: :text
       use Konvex.Implementation.Riak.Ability.ToGetAllTextKeyValues,
           bucket_name: unquote(bucket_name),
-          connection_provider: unquote(quoted_riak_connection_provider),
+          connection: unquote(quoted_riak_connection),
           key_value_aggregate_bucket_name: unquote(key_value_aggregate_bucket_name),
           key_value_aggregate_bucket_key: unquote(key_value_aggregate_bucket_key),
           map_type_name: unquote(map_type_name)
       use Konvex.Implementation.Riak.Ability.ToGetTextValue,
           bucket_name: unquote(bucket_name),
           conflict_resolution_strategy_module: unquote(conflict_resolution_strategy_module),
-          connection_provider: unquote(quoted_riak_connection_provider)
+          connection: unquote(quoted_riak_connection)
 
       defmodule Private.Implementation.Ability.ToDeleteKey do
         use Konvex.Implementation.Riak.Ability.ToDeleteKey,
             bucket_name: unquote(bucket_name),
-            connection_provider: unquote(quoted_riak_connection_provider),
+            connection: unquote(quoted_riak_connection),
             value_type: :text
       end
 
       defmodule Private.Implementation.Ability.ToPutTextValue do
         use Konvex.Implementation.Riak.Ability.ToPutTextValue,
             bucket_name: unquote(bucket_name),
-            connection_provider: unquote(quoted_riak_connection_provider)
+            connection: unquote(quoted_riak_connection)
       end
 
       defmodule Private.Implementation.Ability.ToPutValueToTextMapValue do
         use Konvex.Implementation.Riak.Ability.ToPutValueToTextMapValue,
             bucket_name: unquote(key_value_aggregate_bucket_name),
-            connection_provider: unquote(quoted_riak_connection_provider),
+            connection: unquote(quoted_riak_connection),
             map_type_name: unquote(map_type_name)
       end
 
       defmodule Private.Implementation.Ability.ToRemoveKeyFromMapValue do
         use Konvex.Implementation.Riak.Ability.ToRemoveKeyFromMapValue,
             bucket_name: unquote(key_value_aggregate_bucket_name),
-            connection_provider: unquote(quoted_riak_connection_provider),
+            connection: unquote(quoted_riak_connection),
             map_type_name: unquote(map_type_name)
       end
 
