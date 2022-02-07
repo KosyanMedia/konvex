@@ -28,7 +28,7 @@ by adding `konvex` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:konvex, "~> 1.0.0", git: "git@github.com:KosyanMedia/konvex.git"}
+    {:konvex, github: "KosyanMedia/konvex"}
   ]
 end
 ```
