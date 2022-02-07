@@ -1,7 +1,6 @@
 defmodule Konvex.Implementation.Riak.Ability.ToGetTextValueTest do
   use ExUnit.Case
-  # TODO: Refactor to Konvex.Implementation.Riak.Ability.ToGetTextValue is coming
-  doctest Konvex.Implementation.Riak.Ability.ToGetValue
+  doctest Konvex.Implementation.Riak.Ability.ToGetTextValue
 
   defmodule BackendMock do
     use GenServer
@@ -46,9 +45,11 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetTextValueTest do
           nil ->
             {:error, :notfound}
 
-          value ->
+          the_only_value ->
             casual_context =
               <<42>>
+            metadata =
+              :dict.new()
             {
               :ok,
               {
@@ -56,9 +57,11 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetTextValueTest do
                 "probe_bucket",
                 bucket_key,
                 casual_context,
-                [],
-                :dict.new(),
-                value
+                [{metadata, the_only_value}],
+                # Uncommitted metadata update
+                :undefined,
+                # Uncommitted value update
+                :undefined
               }
             }
         end,
@@ -68,33 +71,31 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetTextValueTest do
   end
 
   defmodule Client do
-    use Konvex.Implementation.Riak.Ability.ToGetValue,
+    use Konvex.Implementation.Riak.Ability.ToGetTextValue,
         bucket_name: "probe_bucket",
-        connection_provider: Application.get_env(:konvex, :backend_mock_pid),
-        value_type: :text
+        conflict_resolution_strategy_module: Konvex.Implementation.Riak.ConflictResolutionStrategy.Raise,
+        connection_provider: Application.get_env(:konvex, :backend_mock_pid)
+  end
+
+  setup_all do
+    initial_storage_state =
+      %{"foo" => "bar", "bar" => nil}
+    backend_mock_pid =
+      start_supervised!({BackendMock, [initial_storage_state]})
+    Application.put_env(:konvex, :backend_mock_pid, backend_mock_pid)
   end
 
   describe "Riak ability to get text value" do
-    setup do
-      initial_storage_state =
-        %{"foo" => "bar", "bar" => nil}
-      backend_mock_pid =
-        start_supervised!({BackendMock, [initial_storage_state]})
-      Application.put_env(:konvex, :backend_mock_pid, backend_mock_pid)
-    end
-
     test "should return text value associated with the provided key" do
-      assert Client.get("foo") === "bar"
+      assert Client.get_text_value("foo") === "bar"
     end
 
     test "should return :key_not_found if the provided key is associated with nil" do
-      assert Client.get("bar") === :key_not_found
+      assert Client.get_text_value("bar") === :key_not_found
     end
 
     test "should return :key_not_found if the provided key is no present" do
-      assert Client.get("baz") === :key_not_found
+      assert Client.get_text_value("baz") === :key_not_found
     end
-
-    # TODO: Siblings problem
   end
 end

@@ -1,8 +1,9 @@
-defmodule Konvex.Implementation.Riak.Ability.ToCheckKeyExistence do
+defmodule Konvex.Implementation.Riak.Ability.ToCheckKeyExists do
   @doc """
   Value type specification is compulsory
   due to Riak library has different find functions for different data types
   (it has Riak.find/3 for regular KV-objects and Riak.find/4 for CRDTs)
+  https://docs.riak.com/riak/kv/2.2.3/developing/key-value-modeling/index.html#bucket-types-as-additional-namespaces
   """
   defmacro __using__(
              [
@@ -15,11 +16,11 @@ defmodule Konvex.Implementation.Riak.Ability.ToCheckKeyExistence do
     quote do
       alias Konvex.Implementation.Riak.Connection
 
-      @behaviour Konvex.Ability.ToCheckKeyExistence
+      @behaviour Konvex.Ability.ToCheckKeyExists
 
-      @impl Konvex.Ability.ToCheckKeyExistence
-      @spec has?(key :: String.t) :: boolean
-      def has?(<<_, _ :: binary>> = key) when is_binary(key) do
+      @impl Konvex.Ability.ToCheckKeyExists
+      @spec key_exists?(key :: String.t) :: boolean
+      def key_exists?(key) when is_binary(key) do
         connection_pid =
           Connection.Provider.get_connection_pid(unquote(quoted_riak_connection_provider))
         case Riak.find(
@@ -51,11 +52,11 @@ defmodule Konvex.Implementation.Riak.Ability.ToCheckKeyExistence do
     quote do
       alias Konvex.Implementation.Riak.Connection
 
-      @behaviour Konvex.Ability.ToCheckKeyExistence
+      @behaviour Konvex.Ability.ToCheckKeyExists
 
-      @impl Konvex.Ability.ToCheckKeyExistence
-      @spec has?(key :: String.t) :: boolean
-      def has?(<<_, _ :: binary>> = key) when is_binary(key) do
+      @impl Konvex.Ability.ToCheckKeyExists
+      @spec key_exists?(key :: String.t) :: boolean
+      def key_exists?(key) when is_binary(key) do
         connection_pid =
           Connection.Provider.get_connection_pid(unquote(quoted_riak_connection_provider))
         case Riak.find(
@@ -69,7 +70,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToCheckKeyExistence do
           {:error, some_reason_from_riakc_pb_socket_get} ->
             raise "Failed to find #{unquote(bucket_name)}:#{key} in Riak, :riakc_pb_socket.get responded: #{inspect some_reason_from_riakc_pb_socket_get}"
 
-          _key_value_object ->
+          _key_value_object_or_siblings_list ->
             true
         end
       end

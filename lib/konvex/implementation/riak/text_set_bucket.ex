@@ -1,4 +1,4 @@
-defmodule Konvex.Implementation.Riak.SetBucket do
+defmodule Konvex.Implementation.Riak.TextSetBucket do
   @doc """
   Riak bucket with set (CRDT) values CRUD-client
   """
@@ -10,13 +10,11 @@ defmodule Konvex.Implementation.Riak.SetBucket do
              ]
            ) do
     quote do
-      alias Konvex.Implementation.Riak.Connection
-
-      use Konvex.Implementation.Riak.Ability.ToAddSetValue,
+      use Konvex.Implementation.Riak.Ability.ToAddValueToTextSetValue,
           bucket_name: unquote(bucket_name),
           connection_provider: unquote(quoted_riak_connection_provider),
           set_type_name: unquote(set_type_name)
-      use Konvex.Implementation.Riak.Ability.ToCheckKeyExistence,
+      use Konvex.Implementation.Riak.Ability.ToCheckKeyExists,
           bucket_name: unquote(bucket_name),
           connection_provider: unquote(quoted_riak_connection_provider),
           crdt_name: unquote(set_type_name),
@@ -26,17 +24,15 @@ defmodule Konvex.Implementation.Riak.SetBucket do
           connection_provider: unquote(quoted_riak_connection_provider),
           crdt_name: unquote(set_type_name),
           value_type: :crdt
-      use Konvex.Implementation.Riak.Ability.ToGetValue,
+      use Konvex.Implementation.Riak.Ability.ToGetTextSetValue,
           bucket_name: unquote(bucket_name),
           connection_provider: unquote(quoted_riak_connection_provider),
-          set_type_name: unquote(set_type_name),
-          value_type: :set
-      use Konvex.Implementation.Riak.Ability.ToPutValue,
+          set_type_name: unquote(set_type_name)
+      use Konvex.Implementation.Riak.Ability.ToPutTextSetValue,
           bucket_name: unquote(bucket_name),
           connection_provider: unquote(quoted_riak_connection_provider),
-          set_type_name: unquote(set_type_name),
-          value_type: :set
-      use Konvex.Implementation.Riak.Ability.ToRemoveSetValue,
+          set_type_name: unquote(set_type_name)
+      use Konvex.Implementation.Riak.Ability.ToRemoveValueFromTextSetValue,
           bucket_name: unquote(bucket_name),
           connection_provider: unquote(quoted_riak_connection_provider),
           set_type_name: unquote(set_type_name)

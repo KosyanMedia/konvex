@@ -1,4 +1,4 @@
-defmodule Konvex.Implementation.Riak.Ability.ToUpdateMapValue do
+defmodule Konvex.Implementation.Riak.Ability.ToPutValueToTextMapValue do
   defmacro __using__(
              [
                bucket_name: <<_, _ :: binary>> = bucket_name,
@@ -9,12 +9,13 @@ defmodule Konvex.Implementation.Riak.Ability.ToUpdateMapValue do
     quote do
       alias Konvex.Implementation.Riak.Connection
 
-      @behaviour Konvex.Ability.ToUpdateMapValue
+      @behaviour Konvex.Ability.ToPutValueToTextMapValue
 
-      @impl Konvex.Ability.ToUpdateMapValue
-      @spec update(key :: String.t, map_key :: String.t, update :: (old_value :: String.t -> new_value :: String.t))
+      @impl Konvex.Ability.ToPutValueToTextMapValue
+      @spec put_value_to_text_map_value(key :: String.t, map_key :: String.t, value :: String.t)
             :: :key_not_found | :unit
-      def update(<<_, _ :: binary>> = key, <<_, _ :: binary>> = map_key, update) do
+      def put_value_to_text_map_value(key, map_key, value)
+          when is_binary(key) and is_binary(map_key) and is_binary(value) do
         connection_pid =
           Connection.Provider.get_connection_pid(unquote(quoted_riak_connection_provider))
         Riak.find(
@@ -31,32 +32,28 @@ defmodule Konvex.Implementation.Riak.Ability.ToUpdateMapValue do
                [] = _uncommitted_removed_map_keys,
                casual_context_to_preserve
              } = fetched_map when is_list(fetched_map_entries) and is_binary(casual_context_to_preserve) ->
-               fetched_map
-               |> Riak.CRDT.Map.update(
-                    :register,
-                    map_key,
-                    fn {:register, old_value, :undefined} = entry_value when
-                         is_binary(old_value) ->
-                      entry_value
-                      |> Riak.CRDT.Register.set(update.(old_value))
-                    end
-                  )
-               |> (
-                    fn map_with_updated_key ->
-                      Riak.update(
-                        connection_pid,
-                        map_with_updated_key,
-                        unquote(map_type_name),
-                        unquote(bucket_name),
-                        key
-                      )
-                    end
-                    ).()
+               with updated_fetched_map <-
+                      Riak.CRDT.Map.update(
+                        fetched_map,
+                        :register,
+                        map_key,
+                        fn {:register, old_value, :undefined} when is_binary(old_value) ->
+                          {:register, old_value, value}
+                        end
+                      ) do
+                 Riak.update(
+                   connection_pid,
+                   updated_fetched_map,
+                   unquote(map_type_name),
+                   unquote(bucket_name),
+                   key
+                 )
+               end
                |> case do
                     :ok ->
                       :unit
 
-                    # Formally it has three successful term more
+                    # Formally Riak.update/5 has three successful term more
                   end
 
              nil ->

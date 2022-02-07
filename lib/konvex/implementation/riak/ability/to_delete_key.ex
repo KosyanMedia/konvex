@@ -3,6 +3,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToDeleteKey do
   Value type specification is compulsory
   due to Riak library has different delete functions for different data types
   (it has Riak.delete/3 for regular KV-objects and Riak.delete/4 for CRDTs)
+  https://docs.riak.com/riak/kv/2.2.3/developing/key-value-modeling/index.html#bucket-types-as-additional-namespaces
   """
   defmacro __using__(
              [
@@ -18,8 +19,8 @@ defmodule Konvex.Implementation.Riak.Ability.ToDeleteKey do
       @behaviour Konvex.Ability.ToDeleteKey
 
       @impl Konvex.Ability.ToDeleteKey
-      @spec delete(key :: String.t) :: :unit
-      def delete(<<_, _ :: binary>> = key) do
+      @spec delete_key(key :: String.t) :: :unit
+      def delete_key(key) when is_binary(key) do
         connection_pid =
           Connection.Provider.get_connection_pid(unquote(quoted_riak_connection_provider))
         case Riak.delete(
@@ -51,8 +52,8 @@ defmodule Konvex.Implementation.Riak.Ability.ToDeleteKey do
       @behaviour Konvex.Ability.ToDeleteKey
 
       @impl Konvex.Ability.ToDeleteKey
-      @spec delete(key :: String.t) :: :unit
-      def delete(<<_, _ :: binary>> = key) do
+      @spec delete_key(key :: String.t) :: :unit
+      def delete_key(key) when is_binary(key) do
         connection_pid =
           Connection.Provider.get_connection_pid(unquote(quoted_riak_connection_provider))
         case Riak.delete(

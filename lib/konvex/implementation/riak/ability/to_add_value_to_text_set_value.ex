@@ -1,4 +1,4 @@
-defmodule Konvex.Implementation.Riak.Ability.ToAddSetValue do
+defmodule Konvex.Implementation.Riak.Ability.ToAddValueToTextSetValue do
   defmacro __using__(
              [
                bucket_name: <<_, _ :: binary>> = bucket_name,
@@ -9,11 +9,11 @@ defmodule Konvex.Implementation.Riak.Ability.ToAddSetValue do
     quote do
       alias Konvex.Implementation.Riak.Connection
 
-      @behaviour Konvex.Ability.ToAddSetValue
+      @behaviour Konvex.Ability.ToAddValueToTextSetValue
 
-      @impl Konvex.Ability.ToAddSetValue
-      @spec add(key :: String.t, value :: String.t) :: :key_not_found | :unit
-      def add(<<_, _ :: binary>> = key, value) when is_binary(value) do
+      @impl Konvex.Ability.ToAddValueToTextSetValue
+      @spec add_value_to_text_set_value(key :: String.t, value :: String.t) :: :key_not_found | :unit
+      def add_value_to_text_set_value(key, value) when is_binary(key) and is_binary(value) do
         connection_pid =
           Connection.Provider.get_connection_pid(unquote(quoted_riak_connection_provider))
         Riak.find(
@@ -30,24 +30,23 @@ defmodule Konvex.Implementation.Riak.Ability.ToAddSetValue do
                [] = _uncommitted_removed_set_values,
                casual_context_to_preserve
              } = fetched_set when is_list(fetched_set_values) and is_binary(casual_context_to_preserve) ->
-               fetched_set
-               |> Riak.CRDT.Set.put(value)
-               |> (
-                    fn new_key_value_object ->
-                      Riak.update(
-                        connection_pid,
-                        new_key_value_object,
-                        unquote(set_type_name),
-                        unquote(bucket_name),
-                        key
-                      )
-                    end
-                    ).()
+               if (fetched_set_values |> MapSet.new() |> MapSet.member?(value)) do
+                 # Idempotent operation
+                 :ok
+               else
+                 Riak.update(
+                   connection_pid,
+                   {:set, fetched_set_values, [value], [], casual_context_to_preserve},
+                   unquote(set_type_name),
+                   unquote(bucket_name),
+                   key
+                 )
+               end
                |> case do
                     :ok ->
                       :unit
 
-                    # Formally it has three successful term more
+                    # Formally Riak.update/5 has three successful term more
                   end
 
              nil ->

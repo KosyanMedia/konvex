@@ -15,12 +15,11 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetAllKeys do
     quote do
       alias Konvex.Implementation.Riak.Connection
 
-      defmodule Private.Implementation.Ability.ToGetSetValue do
-        use Konvex.Implementation.Riak.Ability.ToGetValue,
+      defmodule Private.Implementation.Ability.ToGetTextSetValue do
+        use Konvex.Implementation.Riak.Ability.ToGetTextSetValue,
             bucket_name: unquote(key_aggregate_bucket_name),
             connection_provider: unquote(quoted_riak_connection_provider),
-            set_type_name: unquote(set_type_name),
-            value_type: :set
+            set_type_name: unquote(set_type_name)
       end
 
       @behaviour Konvex.Ability.ToGetAllKeys
@@ -28,7 +27,8 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetAllKeys do
       @impl Konvex.Ability.ToGetAllKeys
       @spec get_all_keys() :: MapSet.t(key :: String.t)
       def get_all_keys() do
-        case Private.Implementation.Ability.ToGetSetValue.get(unquote(key_aggregate_bucket_key)) do
+        case Private.Implementation.Ability.ToGetTextSetValue
+             .get_text_set_value(unquote(key_aggregate_bucket_key)) do
           :key_not_found ->
             raise "To query all keys you have to set up storage aggregate: "
                   <> "#{unquote(key_aggregate_bucket_name)}"

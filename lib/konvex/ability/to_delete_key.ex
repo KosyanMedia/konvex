@@ -1,3 +1,3 @@
 defmodule Konvex.Ability.ToDeleteKey do
-  @callback delete(key :: String.t) :: :unit
+  @callback delete_key(key :: String.t) :: :unit
 end

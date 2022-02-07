@@ -1,4 +1,4 @@
-defmodule Konvex.Implementation.Riak.MapBucket do
+defmodule Konvex.Implementation.Riak.TextMapBucket do
   @doc """
   Riak bucket with map (CRDT) values CRUD-client
   """
@@ -10,9 +10,7 @@ defmodule Konvex.Implementation.Riak.MapBucket do
              ]
            ) do
     quote do
-      alias Konvex.Implementation.Riak.Connection
-
-      use Konvex.Implementation.Riak.Ability.ToCheckKeyExistence,
+      use Konvex.Implementation.Riak.Ability.ToCheckKeyExists,
           bucket_name: unquote(bucket_name),
           connection_provider: unquote(quoted_riak_connection_provider),
           crdt_name: unquote(map_type_name),
@@ -22,21 +20,19 @@ defmodule Konvex.Implementation.Riak.MapBucket do
           connection_provider: unquote(quoted_riak_connection_provider),
           crdt_name: unquote(map_type_name),
           value_type: :crdt
-      use Konvex.Implementation.Riak.Ability.ToGetValue,
-          bucket_name: unquote(bucket_name),
-          connection_provider: unquote(quoted_riak_connection_provider),
-          map_type_name: unquote(map_type_name),
-          value_type: :map
-      use Konvex.Implementation.Riak.Ability.ToPutValue,
-          bucket_name: unquote(bucket_name),
-          connection_provider: unquote(quoted_riak_connection_provider),
-          map_type_name: unquote(map_type_name),
-          value_type: :map
-      use Konvex.Implementation.Riak.Ability.ToRemoveMapKey,
+      use Konvex.Implementation.Riak.Ability.ToGetTextMapValue,
           bucket_name: unquote(bucket_name),
           connection_provider: unquote(quoted_riak_connection_provider),
           map_type_name: unquote(map_type_name)
-      use Konvex.Implementation.Riak.Ability.ToUpdateMapValue,
+      use Konvex.Implementation.Riak.Ability.ToPutTextMapValue,
+          bucket_name: unquote(bucket_name),
+          connection_provider: unquote(quoted_riak_connection_provider),
+          map_type_name: unquote(map_type_name)
+      use Konvex.Implementation.Riak.Ability.ToPutValueToTextMapValue,
+          bucket_name: unquote(bucket_name),
+          connection_provider: unquote(quoted_riak_connection_provider),
+          map_type_name: unquote(map_type_name)
+      use Konvex.Implementation.Riak.Ability.ToRemoveKeyFromMapValue,
           bucket_name: unquote(bucket_name),
           connection_provider: unquote(quoted_riak_connection_provider),
           map_type_name: unquote(map_type_name)

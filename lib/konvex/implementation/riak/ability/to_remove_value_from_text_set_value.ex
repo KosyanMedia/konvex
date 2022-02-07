@@ -1,4 +1,4 @@
-defmodule Konvex.Implementation.Riak.Ability.ToRemoveSetValue do
+defmodule Konvex.Implementation.Riak.Ability.ToRemoveValueFromTextSetValue do
   defmacro __using__(
              [
                bucket_name: <<_, _ :: binary>> = bucket_name,
@@ -9,11 +9,11 @@ defmodule Konvex.Implementation.Riak.Ability.ToRemoveSetValue do
     quote do
       alias Konvex.Implementation.Riak.Connection
 
-      @behaviour Konvex.Ability.ToRemoveSetValue
+      @behaviour Konvex.Ability.ToRemoveValueFromTextSetValue
 
-      @impl Konvex.Ability.ToRemoveSetValue
-      @spec remove(key :: String.t, value :: String.t) :: :key_not_found | :unit
-      def remove(<<_, _ :: binary>> = key, value) when is_binary(value) do
+      @impl Konvex.Ability.ToRemoveValueFromTextSetValue
+      @spec remove_value_from_text_set_value(key :: String.t, value :: String.t) :: :key_not_found | :unit
+      def remove_value_from_text_set_value(key, value) when is_binary(key) and is_binary(value) do
         connection_pid =
           Connection.Provider.get_connection_pid(unquote(quoted_riak_connection_provider))
         Riak.find(
@@ -30,19 +30,18 @@ defmodule Konvex.Implementation.Riak.Ability.ToRemoveSetValue do
                [] = _uncommitted_removed_set_values,
                casual_context_to_preserve
              } = fetched_set when is_list(fetched_set_values) and is_binary(casual_context_to_preserve) ->
-               fetched_set
-               |> Riak.CRDT.Set.delete(value)
-               |> (
-                    fn new_key_value_object ->
-                      Riak.update(
-                        connection_pid,
-                        new_key_value_object,
-                        unquote(set_type_name),
-                        unquote(bucket_name),
-                        key
-                      )
-                    end
-                    ).()
+               if (fetched_set_values |> MapSet.new() |> MapSet.member?(value)) do
+                 Riak.update(
+                   connection_pid,
+                   {:set, fetched_set_values, [], [value], casual_context_to_preserve},
+                   unquote(set_type_name),
+                   unquote(bucket_name),
+                   key
+                 )
+               else
+                 # Idempotent operation
+                 :ok
+               end
                |> case do
                     :ok ->
                       :unit
