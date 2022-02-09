@@ -19,123 +19,135 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
 
       def put_text_map_value(<<_, _ :: binary>> = key, empty_map) when empty_map === %{} do
         using unquote(quoted_riak_connection), fn connection_pid ->
-          case Riak.find(
+          case :riakc_pb_socket.fetch_type(
                  connection_pid,
-                 unquote(map_type_name),
-                 unquote(bucket_name),
+                 {unquote(map_type_name), unquote(bucket_name)},
                  key
                ) do
             {
-              :map,
-              [] = _fetched_map_entries,
-              [] = _uncommitted_added_map_entries,
-              [] = _uncommitted_removed_map_keys,
-              casual_context
-            } when is_binary(casual_context) ->
+              :ok,
+              {
+                :map,
+                [] = _fetched_map_entries,
+                [] = _uncommitted_added_map_entries,
+                [] = _uncommitted_removed_map_keys,
+                casual_context_that_has_to_be_preserved
+              }
+            } when is_binary(casual_context_that_has_to_be_preserved) ->
               # Idempotent operation
               :ok
 
             {
-              :map,
-              fetched_map_entries,
-              [] = _uncommitted_added_map_entries,
-              [] = _uncommitted_removed_map_keys,
-              casual_context_to_preserve
-            } = fetched_map when is_list(fetched_map_entries) and is_binary(casual_context_to_preserve) ->
+              :ok,
+              {
+                :map,
+                fetched_map_entries,
+                [] = _uncommitted_added_map_entries,
+                [] = _uncommitted_removed_map_keys,
+                casual_context_that_has_to_be_preserved
+              }
+            } when is_list(fetched_map_entries) and is_binary(casual_context_that_has_to_be_preserved) ->
               # In this case we have to remove every already present map entry
-              Riak.update(
+              :riakc_pb_socket.update_type(
                 connection_pid,
-                {
-                  :map,
-                  fetched_map_entries,
-                  [],
-                  fetched_map_entries
-                  |> Enum.map(
-                       fn {{entry_key, entry_type} = fetched_map_entry, entry_value}
-                          when is_binary(entry_key) and is_atom(entry_type) and is_binary(entry_value) ->
-                         fetched_map_entry
-                       end
-                     ),
-                  casual_context_to_preserve
-                },
-                unquote(map_type_name),
-                unquote(bucket_name),
-                key
+                {unquote(map_type_name), unquote(bucket_name)},
+                key,
+                :riakc_map.to_op(
+                  {
+                    :map,
+                    fetched_map_entries,
+                    [],
+                    fetched_map_entries
+                    |> Enum.map(
+                         fn {{entry_key, entry_type} = fetched_map_entry, entry_value}
+                            when is_binary(entry_key) and is_atom(entry_type) and is_binary(entry_value) ->
+                           fetched_map_entry
+                         end
+                       ),
+                    casual_context_that_has_to_be_preserved
+                  }
+                )
               )
 
-            nil ->
+            {:error, {:notfound, :map}} ->
               # In this case we have to commit an empty map
               # This can't be accomplished using :riakc itself
               # (library forbids "unmodified commits", see to_op/1, update_type/5, etc.)
               # So we workaround this by creating a map with probe entry and then remove it from the map
               with new_map_with_probe_entry <-
-                     Riak.CRDT.Map.new()
-                     |> Riak.CRDT.Map.put(
-                          "probe_key",
-                          Riak.CRDT.Register.new("probe_value")
-                        ),
+                     {
+                       :map,
+                       :undefined,
+                       [{"probe_key", :register}, {:register, :undefined, "probe_value"}],
+                       [],
+                       :undefined
+                     },
                    :ok <-
-                     Riak.update(
+                     :riakc_pb_socket.update_type(
                        connection_pid,
-                       new_map_with_probe_entry,
-                       unquote(map_type_name),
-                       unquote(bucket_name),
-                       key
+                       {unquote(map_type_name), unquote(bucket_name)},
+                       key,
+                       :riakc_map.to_op(new_map_with_probe_entry)
                      ),
                    {
-                     :map,
-                     [{{"probe_key", :register} = probe_entry_key, "probe_value"}],
-                     [] = _uncommitted_added_map_entries,
-                     [] = _uncommitted_removed_map_keys,
-                     casual_context_to_preserve
-                   } = persisted_new_map_with_probe_entry when is_binary(casual_context_to_preserve) <-
-                     Riak.find(
+                     :ok,
+                     {
+                       :map,
+                       [{{"probe_key", :register} = probe_entry_key, "probe_value"}],
+                       [] = _uncommitted_added_map_entries,
+                       [] = _uncommitted_removed_map_keys,
+                       casual_context_that_has_to_be_preserved
+                     }
+                   } = persisted_new_map_with_probe_entry when is_binary(casual_context_that_has_to_be_preserved) <-
+                     :riakc_pb_socket.fetch_type(
                        connection_pid,
-                       unquote(map_type_name),
-                       unquote(bucket_name),
+                       {unquote(map_type_name), unquote(bucket_name)},
                        key
                      ),
                    empty_map <-
-                     Riak.CRDT.Map.delete(
-                       persisted_new_map_with_probe_entry,
-                       probe_entry_key
-                     ) do
-                Riak.update(
+                     :riakc_map.erase(probe_entry_key, persisted_new_map_with_probe_entry) do
+                :riakc_pb_socket.update_type(
                   connection_pid,
-                  empty_map,
-                  unquote(map_type_name),
-                  unquote(bucket_name),
-                  key
+                  {unquote(map_type_name), unquote(bucket_name)},
+                  key,
+                  :riakc_map.to_op(empty_map)
                 )
               end
 
-            {:error, some_reason_from_riakc_pb_socket_fetch_type} ->
-              raise "Failed to find #{unquote(bucket_name)}<#{unquote(map_type_name)}>:#{key} in Riak, :riakc_pb_socket.fetch_type responded: #{inspect some_reason_from_riakc_pb_socket_fetch_type}"
+            {:error, riakc_pb_socket_fetch_type_error} ->
+              object_locator =
+                "#{unquote(bucket_name)}<#{unquote(map_type_name)}>:#{key}"
+              error_message =
+                inspect riakc_pb_socket_fetch_type_error
+              raise "Failed to find #{object_locator} in Riak, :riakc_pb_socket.fetch_type/3 responded: #{error_message}"
           end
           |> case do
                :ok ->
                  :unit
-
-               # Formally Riak.update/5 has three successful term more
              end
         end
       end
 
       def put_text_map_value(<<_, _ :: binary>> = key, %{} = nonempty_map) do
         using unquote(quoted_riak_connection), fn connection_pid ->
-          case Riak.find(
+          case :riakc_pb_socket.fetch_type(
                  connection_pid,
-                 unquote(map_type_name),
-                 unquote(bucket_name),
+                 {unquote(map_type_name), unquote(bucket_name)},
                  key
                ) do
             {
-              :map,
-              fetched_map_entries,
-              [] = _uncommitted_added_map_entries,
-              [] = _uncommitted_removed_map_keys,
-              casual_context_to_preserve
-            } = fetched_map when is_list(fetched_map_entries) and is_binary(casual_context_to_preserve) ->
+              :ok,
+              {
+                :map,
+                [
+                  {{<<_, _ :: binary>> = _entry_key, _entry_type}, <<_ :: binary>> = _entry_value}
+                  | _rest_entries
+                ] = fetched_map_entries,
+                [] = _uncommitted_added_map_entries,
+                [] = _uncommitted_removed_map_keys,
+                casual_context_that_has_to_be_preserved
+              }
+            } when is_binary(casual_context_that_has_to_be_preserved) ->
               {
                 :map,
                 fetched_map_entries,
@@ -148,14 +160,18 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
                      end
                    )
                 |> Enum.map(fn {entry_key_and_type, entry_value} -> entry_key_and_type end),
-                casual_context_to_preserve
+                casual_context_that_has_to_be_preserved
               }
 
-            nil ->
-              Riak.CRDT.Map.new()
+            {:error, {:notfound, :map}} ->
+              {:map, :undefined, [], [], :undefined}
 
-            {:error, some_reason_from_riakc_pb_socket_fetch_type} ->
-              raise "Failed to find #{unquote(bucket_name)}<#{unquote(map_type_name)}>:#{key} in Riak, :riakc_pb_socket.fetch_type responded: #{inspect some_reason_from_riakc_pb_socket_fetch_type}"
+            {:error, riakc_pb_socket_fetch_type_error} ->
+              object_locator =
+                "#{unquote(bucket_name)}<#{unquote(map_type_name)}>:#{key}"
+              error_message =
+                inspect riakc_pb_socket_fetch_type_error
+              raise "Failed to find #{object_locator} in Riak, :riakc_pb_socket.fetch_type/3 responded: #{error_message}"
           end
           |> (
                fn map_without_redundant_keys ->
@@ -164,34 +180,30 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
                       map_without_redundant_keys,
                       fn {entry_key, entry_value}, map_extended_with_new_map_entries
                       when is_binary(entry_key) and is_binary(entry_value) ->
-                        map_extended_with_new_map_entries
-                        |> Riak.CRDT.Map.update(
-                             :register,
-                             entry_key,
-                             fn {:register, old_value, :undefined} when is_binary(old_value) ->
-                               {:register, old_value, entry_value}
-                             end
-                           )
+                        :riakc_map.update(
+                          {entry_key, :register},
+                          fn {:register, old_value, :undefined} when is_binary(old_value) ->
+                            {:register, old_value, entry_value}
+                          end,
+                          map_without_redundant_keys
+                        )
                       end
                     )
                end
                ).()
           |> (
                fn new_map ->
-                 Riak.update(
+                 :riakc_pb_socket.update_type(
                    connection_pid,
-                   new_map,
-                   unquote(map_type_name),
-                   unquote(bucket_name),
-                   key
+                   {unquote(map_type_name), unquote(bucket_name)},
+                   key,
+                   :riakc_map.to_op(new_map)
                  )
                end
                ).()
           |> case do
                :ok ->
                  :unit
-
-               # Formally Riak.update/5 has three successful term more
              end
         end
       end

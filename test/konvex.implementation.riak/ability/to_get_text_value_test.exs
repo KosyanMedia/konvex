@@ -32,6 +32,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetTextValueTest do
               :undefined,
               :undefined,
               :undefined,
+              :undefined,
               :undefined
             },
             _timeout

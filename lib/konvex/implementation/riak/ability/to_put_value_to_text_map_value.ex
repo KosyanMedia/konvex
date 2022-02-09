@@ -22,50 +22,58 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutValueToTextMapValue do
       def put_value_to_text_map_value(<<_, _ :: binary>> = key, <<_, _ :: binary>> = map_key, value)
           when is_binary(value) do
         using unquote(quoted_riak_connection), fn connection_pid ->
-          Riak.find(
-            connection_pid,
-            unquote(map_type_name),
-            unquote(bucket_name),
-            key
-          )
-          |> case do
-               {
-                 :map,
-                 fetched_map_entries,
-                 [] = _uncommitted_added_map_entries,
-                 [] = _uncommitted_removed_map_keys,
-                 casual_context_to_preserve
-               } = fetched_map when is_list(fetched_map_entries) and is_binary(casual_context_to_preserve) ->
-                 with updated_fetched_map <-
-                        Riak.CRDT.Map.update(
-                          fetched_map,
-                          :register,
-                          map_key,
-                          fn {:register, old_value, :undefined} when is_binary(old_value) ->
-                            {:register, old_value, value}
-                          end
-                        ) do
-                   Riak.update(
-                     connection_pid,
-                     updated_fetched_map,
-                     unquote(map_type_name),
-                     unquote(bucket_name),
-                     key
-                   )
+          case :riakc_pb_socket.fetch_type(
+                 connection_pid,
+                 {unquote(map_type_name), unquote(bucket_name)},
+                 key
+               ) do
+            {
+              :ok,
+              {
+                :map,
+                fetched_map_entries,
+                [] = _uncommitted_added_map_entries,
+                [] = _uncommitted_removed_map_keys,
+                casual_context_that_has_to_be_preserved
+              } = fetched_map
+            } when is_list(fetched_map_entries) and is_binary(casual_context_that_has_to_be_preserved) ->
+              with updated_fetched_map <-
+                     :riakc_map.update(
+                       {map_key, :register},
+                       fn {:register, old_value, :undefined} when is_binary(old_value) ->
+                         {:register, old_value, value}
+                       end,
+                       fetched_map
+                     ) do
+                :riakc_pb_socket.update_type(
+                  connection_pid,
+                  {unquote(map_type_name), unquote(bucket_name)},
+                  key,
+                  :riakc_map.to_op(updated_fetched_map)
+                )
+              end
+              |> case do
+                   :ok ->
+                     :unit
+
+                   {:error, riakc_pb_socket_update_type_error} ->
+                     object_locator =
+                       "#{unquote(bucket_name)}<#{unquote(map_type_name)}>:#{key}"
+                     error_message =
+                       inspect riakc_pb_socket_update_type_error
+                     raise "Failed to update #{object_locator} in Riak, :riakc_pb_socket.update_type/4 responded: #{error_message}"
                  end
-                 |> case do
-                      :ok ->
-                        :unit
 
-                      # Formally Riak.update/5 has three successful term more
-                    end
+            {:error, {:notfound, :map}} ->
+              :key_not_found
 
-               nil ->
-                 :key_not_found
-
-               {:error, some_reason_from_riakc_pb_socket_fetch_type} ->
-                 raise "Failed to find #{unquote(bucket_name)}<#{unquote(map_type_name)}>:#{key} in Riak, :riakc_pb_socket.fetch_type responded: #{inspect some_reason_from_riakc_pb_socket_fetch_type}"
-             end
+            {:error, riakc_pb_socket_fetch_type_error} ->
+              object_locator =
+                "#{unquote(bucket_name)}<#{unquote(map_type_name)}>:#{key}"
+              error_message =
+                inspect riakc_pb_socket_fetch_type_error
+              raise "Failed to find #{object_locator} in Riak, :riakc_pb_socket.fetch_type/3 responded: #{error_message}"
+          end
         end
       end
     end

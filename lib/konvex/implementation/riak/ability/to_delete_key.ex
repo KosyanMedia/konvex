@@ -22,17 +22,16 @@ defmodule Konvex.Implementation.Riak.Ability.ToDeleteKey do
       @spec delete_key(key :: String.t) :: :unit
       def delete_key(key) when is_binary(key) do
         using unquote(quoted_riak_connection), fn connection_pid ->
-          case Riak.delete(
-                 connection_pid,
-                 unquote(crdt_name),
-                 unquote(bucket_name),
-                 key
-               ) do
+          case :riakc_pb_socket.delete(connection_pid, {unquote(crdt_name), unquote(bucket_name)}, key) do
             :ok ->
               :unit
 
-            {:error, some_reason_from_riakc_pb_socket_delete} ->
-              raise "Failed to delete #{unquote(bucket_name)}<#{unquote(crdt_name)}>:#{key} from Riak, :riakc_pb_socket.delete responded: #{inspect some_reason_from_riakc_pb_socket_delete}"
+            {:error, riakc_pb_socket_delete_error} ->
+              object_locator =
+                "#{unquote(bucket_name)}:#{key}"
+              error_message =
+                inspect riakc_pb_socket_delete_error
+              raise "Failed to delete #{object_locator} from Riak, :riakc_pb_socket.delete/3 responded: #{error_message}"
           end
         end
       end
@@ -55,16 +54,16 @@ defmodule Konvex.Implementation.Riak.Ability.ToDeleteKey do
       @spec delete_key(key :: String.t) :: :unit
       def delete_key(key) when is_binary(key) do
         using unquote(quoted_riak_connection), fn connection_pid ->
-          case Riak.delete(
-                 connection_pid,
-                 unquote(bucket_name),
-                 key
-               ) do
+          case :riakc_pb_socket.delete(connection_pid, unquote(bucket_name), key) do
             :ok ->
               :unit
 
-            {:error, some_reason_from_riakc_pb_socket_delete} ->
-              raise "Failed to delete #{unquote(bucket_name)}:#{key} from Riak, :riakc_pb_socket.delete responded: #{inspect some_reason_from_riakc_pb_socket_delete}"
+            {:error, riakc_pb_socket_delete_error} ->
+              object_locator =
+                "#{unquote(bucket_name)}:#{key}"
+              error_message =
+                inspect riakc_pb_socket_delete_error
+              raise "Failed to delete #{object_locator} from Riak, :riakc_pb_socket.delete/3 responded: #{error_message}"
           end
         end
       end

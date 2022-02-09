@@ -20,27 +20,33 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetTextSetValue do
 
       def get_text_set_value(<<_, _ :: binary>> = key) do
         using unquote(quoted_riak_connection), fn connection_pid ->
-          case Riak.find(
+          case :riakc_pb_socket.fetch_type(
                  connection_pid,
-                 unquote(set_type_name),
-                 unquote(bucket_name),
+                 {unquote(set_type_name), unquote(bucket_name)},
                  key
                ) do
             {
-              :set,
-              fetched_set_values,
-              [] = _uncommitted_added_set_values,
-              [] = _uncommitted_removed_set_values,
-              casual_context
-            } = fetched_set when is_list(fetched_set_values) and is_binary(casual_context) ->
+              :ok,
+              {
+                :set,
+                fetched_set_values,
+                [] = _uncommitted_added_set_values,
+                [] = _uncommitted_removed_set_values,
+                casual_context
+              }
+            } when is_list(fetched_set_values) and is_binary(casual_context) ->
               fetched_set_values
               |> MapSet.new()
 
-            nil ->
+            {:error, {:notfound, :set}} ->
               :key_not_found
 
-            {:error, some_reason_from_riakc_pb_socket_fetch_type} ->
-              raise "Failed to find #{unquote(bucket_name)}<#{unquote(set_type_name)}>:#{key} in Riak, :riakc_pb_socket.fetch_type responded: #{inspect some_reason_from_riakc_pb_socket_fetch_type}"
+            {:error, riakc_pb_socket_fetch_type_error} ->
+              object_locator =
+                "#{unquote(bucket_name)}<#{unquote(set_type_name)}>:#{key}"
+              error_message =
+                inspect riakc_pb_socket_fetch_type_error
+              raise "Failed to find #{object_locator} in Riak, :riakc_pb_socket.fetch_type/3 responded: #{error_message}"
           end
         end
       end

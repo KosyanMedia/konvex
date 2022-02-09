@@ -20,18 +20,20 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetTextMapValue do
 
       def get_text_map_value(<<_, _ :: binary>> = key) do
         using unquote(quoted_riak_connection), fn connection_pid ->
-          case Riak.find(
+          case :riakc_pb_socket.fetch_type(
                  connection_pid,
-                 unquote(map_type_name),
-                 unquote(bucket_name),
+                 {unquote(map_type_name), unquote(bucket_name)},
                  key
                ) do
             {
-              :map,
-              fetched_map_entries,
-              [] = _uncommitted_added_map_entries,
-              [] = _uncommitted_removed_map_keys,
-              casual_context
+              :ok,
+              {
+                :map,
+                fetched_map_entries,
+                [] = _uncommitted_added_map_entries,
+                [] = _uncommitted_removed_map_keys,
+                casual_context
+              }
             } when is_list(fetched_map_entries) and is_binary(casual_context) ->
               fetched_map_entries
               |> Enum.map(
@@ -41,11 +43,15 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetTextMapValue do
                  )
               |> Map.new()
 
-            nil ->
+            {:error, {:notfound, :map}} ->
               :key_not_found
 
-            {:error, some_reason_from_riakc_pb_socket_fetch_type} ->
-              raise "Failed to find #{unquote(bucket_name)}<#{unquote(map_type_name)}>:#{key} in Riak, :riakc_pb_socket.fetch_type responded: #{inspect some_reason_from_riakc_pb_socket_fetch_type}"
+            {:error, riakc_pb_socket_fetch_type_error} ->
+              object_locator =
+                "#{unquote(bucket_name)}<#{unquote(map_type_name)}>:#{key}"
+              error_message =
+                inspect riakc_pb_socket_fetch_type_error
+              raise "Failed to find #{object_locator} in Riak, :riakc_pb_socket.fetch_type/3 responded: #{error_message}"
           end
         end
       end

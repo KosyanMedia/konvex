@@ -32,6 +32,7 @@ defmodule Konvex.Implementation.Riak.ConflictResolutionStrategy.RaiseTest do
               :undefined,
               :undefined,
               :undefined,
+              :undefined,
               :undefined
             },
             _timeout

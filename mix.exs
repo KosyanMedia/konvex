@@ -4,7 +4,7 @@ defmodule Konvex.MixProject do
   def project do
     [
       app: :konvex,
-      version: "1.1.0",
+      version: "1.1.1",
       elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
       deps: deps()
@@ -19,10 +19,7 @@ defmodule Konvex.MixProject do
 
   defp deps do
     [
-      # :riak is outdated wrapper for :riak-erlang-client
-      # (furthermore it utilizes incompatible with OTP 24 :pooler)
-      # TODO: Use https://github.com/basho/riak-erlang-client directly instead
-      {:riak, "~> 1.1.6"}
+      {:riakc, github: "basho/riak-erlang-client", tag: "3.0.8+p1"}
     ]
   end
 end

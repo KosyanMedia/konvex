@@ -20,45 +20,56 @@ defmodule Konvex.Implementation.Riak.Ability.ToRemoveValueFromTextSetValue do
 
       def remove_value_from_text_set_value(<<_, _ :: binary>> = key, value) when is_binary(value) do
         using unquote(quoted_riak_connection), fn connection_pid ->
-          Riak.find(
-            connection_pid,
-            unquote(set_type_name),
-            unquote(bucket_name),
-            key
-          )
-          |> case do
-               {
-                 :set,
-                 fetched_set_values,
-                 [] = _uncommitted_added_set_values,
-                 [] = _uncommitted_removed_set_values,
-                 casual_context_to_preserve
-               } = fetched_set when is_list(fetched_set_values) and is_binary(casual_context_to_preserve) ->
-                 if (fetched_set_values |> MapSet.new() |> MapSet.member?(value)) do
-                   Riak.update(
-                     connection_pid,
-                     {:set, fetched_set_values, [], [value], casual_context_to_preserve},
-                     unquote(set_type_name),
-                     unquote(bucket_name),
-                     key
-                   )
-                 else
-                   # Idempotent operation
-                   :ok
-                 end
-                 |> case do
-                      :ok ->
-                        :unit
+          case :riakc_pb_socket.fetch_type(
+                 connection_pid,
+                 {unquote(set_type_name), unquote(bucket_name)},
+                 key
+               ) do
+            {
+              :ok,
+              {
+                :set,
+                fetched_set_values,
+                [] = _uncommitted_added_set_values,
+                [] = _uncommitted_removed_set_values,
+                casual_context_that_has_to_be_preserved
+              }
+            } when is_list(fetched_set_values) and is_binary(casual_context_that_has_to_be_preserved) ->
+              if not (fetched_set_values |> Enum.member?(value)) do
+                # Idempotent operation
+                :unit
+              else
+                :riakc_pb_socket.update_type(
+                  connection_pid,
+                  {unquote(set_type_name), unquote(bucket_name)},
+                  key,
+                  :riakc_set.to_op(
+                    {:set, fetched_set_values, [], [value], casual_context_that_has_to_be_preserved}
+                  )
+                )
+                |> case do
+                     :ok ->
+                       :unit
 
-                      # Formally it has three successful term more
-                    end
+                     {:error, riakc_pb_socket_update_type_error} ->
+                       object_locator =
+                         "#{unquote(bucket_name)}<#{unquote(set_type_name)}>:#{key}"
+                       error_message =
+                         inspect riakc_pb_socket_update_type_error
+                       raise "Failed to update #{object_locator} in Riak, :riakc_pb_socket.update_type/4 responded: #{error_message}"
+                   end
+              end
 
-               nil ->
-                 :key_not_found
+            {:error, {:notfound, :set}} ->
+              :key_not_found
 
-               {:error, some_reason_from_riakc_pb_socket_fetch_type} ->
-                 raise "Failed to find #{unquote(bucket_name)}<#{unquote(set_type_name)}>:#{key} in Riak, :riakc_pb_socket.fetch_type responded: #{inspect some_reason_from_riakc_pb_socket_fetch_type}"
-             end
+            {:error, riakc_pb_socket_fetch_type_error} ->
+              object_locator =
+                "#{unquote(bucket_name)}<#{unquote(set_type_name)}>:#{key}"
+              error_message =
+                inspect riakc_pb_socket_fetch_type_error
+              raise "Failed to find #{object_locator} in Riak, :riakc_pb_socket.fetch_type/3 responded: #{error_message}"
+          end
         end
       end
     end

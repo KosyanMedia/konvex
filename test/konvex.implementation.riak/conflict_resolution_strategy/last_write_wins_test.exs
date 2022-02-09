@@ -32,6 +32,7 @@ defmodule Konvex.Implementation.Riak.ConflictResolutionStrategy.LastWriteWinsTes
               :undefined,
               :undefined,
               :undefined,
+              :undefined,
               :undefined
             },
             _timeout
