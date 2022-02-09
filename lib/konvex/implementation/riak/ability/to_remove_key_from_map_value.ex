@@ -1,4 +1,11 @@
 defmodule Konvex.Implementation.Riak.Ability.ToRemoveKeyFromMapValue do
+  @moduledoc """
+  There is no apriori information about map_key value type in this ability,
+  so to satisfy it's semantics we have to remove map_key of any value type
+  as Riak treats CRDT as an additional namespace
+  (so it can keep different value types under the same map_key)
+  """
+
   defmacro __using__(
              [
                bucket_name: <<_, _ :: binary>> = bucket_name,
@@ -20,59 +27,70 @@ defmodule Konvex.Implementation.Riak.Ability.ToRemoveKeyFromMapValue do
 
       def remove_key_from_map_value(<<_, _ :: binary>> = key, <<_, _ :: binary>> = map_key) do
         using unquote(quoted_riak_connection), fn connection_pid ->
-          Riak.find(
-            connection_pid,
-            unquote(map_type_name),
-            unquote(bucket_name),
-            key
-          )
-          |> case do
-               {
-                 :map,
-                 fetched_map_entries,
-                 [] = _uncommitted_added_map_entries,
-                 [] = _uncommitted_removed_map_keys,
-                 casual_context_to_preserve
-               } = fetched_map when is_list(fetched_map_entries) and is_binary(casual_context_to_preserve) ->
-                 case fetched_map_entries
-                      |> Enum.find(
-                           fn {{entry_key, entry_type}, entry_value}
-                              when is_binary(entry_key) and is_atom(entry_type) and is_binary(entry_value) ->
-                             entry_key === map_key
-                           end
-                         ) do
-                   nil ->
-                     # Idempotent operation
-                     :ok
+          case :riakc_pb_socket.fetch_type(
+                 connection_pid,
+                 {unquote(map_type_name), unquote(bucket_name)},
+                 key
+               ) do
+            {
+              :ok,
+              {
+                :map,
+                fetched_map_entries,
+                [] = _uncommitted_added_map_entries,
+                [] = _uncommitted_removed_map_keys,
+                casual_context_that_has_to_be_preserved
+              }
+            } when is_list(fetched_map_entries) and is_binary(casual_context_that_has_to_be_preserved) ->
+              with updated_fetched_map <-
+                     {
+                       :map,
+                       fetched_map_entries,
+                       [],
+                       [],
+                       casual_context_that_has_to_be_preserved
+                     } do
+                :riakc_pb_socket.update_type(
+                  connection_pid,
+                  {unquote(map_type_name), unquote(bucket_name)},
+                  key,
+                  :riakc_map.to_op(
+                    {
+                      :map,
+                      fetched_map_entries,
+                      [],
+                      # There is no apriori information about map_key value type
+                      # so to satisfy semantics of the ability
+                      # we have to remove each (CRDT) one
+                      [:counter, :flag, :map, :register, :set]
+                      |> Enum.map(fn crdt_type -> {map_key, crdt_type} end),
+                      casual_context_that_has_to_be_preserved
+                    }
+                  )
+                )
+              end
+              |> case do
+                   :ok ->
+                     :unit
 
-                   {{matched_entry_key, matched_entry_type}, _matched_entry_value} ->
-                     Riak.update(
-                       connection_pid,
-                       {
-                         :map,
-                         fetched_map_entries,
-                         [],
-                         [{matched_entry_key, matched_entry_type}],
-                         casual_context_to_preserve
-                       },
-                       unquote(map_type_name),
-                       unquote(bucket_name),
-                       key
-                     )
+                   {:error, riakc_pb_socket_update_type_error} ->
+                     object_locator =
+                       "#{unquote(bucket_name)}<#{unquote(map_type_name)}>:#{key}"
+                     error_message =
+                       inspect riakc_pb_socket_update_type_error
+                     raise "Failed to update #{object_locator} in Riak, :riakc_pb_socket.update_type/4 responded: #{error_message}"
                  end
-                 |> case do
-                      :ok ->
-                        :unit
 
-                      # Formally Riak.update/5 has three successful term more
-                    end
+            {:error, {:notfound, :map}} ->
+              :key_not_found
 
-               nil ->
-                 :key_not_found
-
-               {:error, some_reason_from_riakc_pb_socket_fetch_type} ->
-                 raise "Failed to find #{unquote(bucket_name)}<#{unquote(map_type_name)}>:#{key} in Riak, :riakc_pb_socket.fetch_type responded: #{inspect some_reason_from_riakc_pb_socket_fetch_type}"
-             end
+            {:error, riakc_pb_socket_fetch_type_error} ->
+              object_locator =
+                "#{unquote(bucket_name)}<#{unquote(map_type_name)}>:#{key}"
+              error_message =
+                inspect riakc_pb_socket_fetch_type_error
+              raise "Failed to find #{object_locator} in Riak, :riakc_pb_socket.fetch_type/3 responded: #{error_message}"
+          end
         end
       end
     end
