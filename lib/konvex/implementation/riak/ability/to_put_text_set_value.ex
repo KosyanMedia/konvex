@@ -79,8 +79,8 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextSetValue do
                        [] = _uncommitted_added_set_values,
                        [] = _uncommitted_removed_set_values,
                        casual_context_that_has_to_be_preserved
-                     }
-                   } = persisted_new_set_with_probe_value when is_binary(casual_context_that_has_to_be_preserved) <-
+                     } = persisted_new_set_with_probe_value
+                   } when is_binary(casual_context_that_has_to_be_preserved) <-
                      :riakc_pb_socket.fetch_type(
                        connection_pid,
                        {unquote(set_type_name), unquote(bucket_name)},
