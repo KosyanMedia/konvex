@@ -77,8 +77,8 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
               with new_map_with_probe_entry <-
                      {
                        :map,
-                       :undefined,
-                       [{"probe_key", :register}, {:register, :undefined, "probe_value"}],
+                       [],
+                       [{{"probe_key", :register}, {:register, :undefined, "probe_value"}}],
                        [],
                        :undefined
                      },
@@ -164,7 +164,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
               }
 
             {:error, {:notfound, :map}} ->
-              {:map, :undefined, [], [], :undefined}
+              {:map, [], [], [], :undefined}
 
             {:error, riakc_pb_socket_fetch_type_error} ->
               object_locator =
