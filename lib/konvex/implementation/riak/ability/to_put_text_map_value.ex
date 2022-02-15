@@ -185,7 +185,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
                           fn {:register, old_value, :undefined} when is_binary(old_value) ->
                             {:register, old_value, entry_value}
                           end,
-                          map_without_redundant_keys
+                          map_extended_with_new_map_entries
                         )
                       end
                     )
