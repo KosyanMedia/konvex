@@ -97,8 +97,8 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
                        [] = _uncommitted_added_map_entries,
                        [] = _uncommitted_removed_map_keys,
                        casual_context_that_has_to_be_preserved
-                     }
-                   } = persisted_new_map_with_probe_entry when is_binary(casual_context_that_has_to_be_preserved) <-
+                     } = persisted_new_map_with_probe_entry
+                   } when is_binary(casual_context_that_has_to_be_preserved) <-
                      :riakc_pb_socket.fetch_type(
                        connection_pid,
                        {unquote(map_type_name), unquote(bucket_name)},
