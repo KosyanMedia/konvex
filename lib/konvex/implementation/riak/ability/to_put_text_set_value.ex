@@ -63,7 +63,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextSetValue do
               # (library forbids "unmodified commits", see to_op/1, update_type/5, etc.)
               # So we workaround this by creating a set with probe value and then remove it from the set
               with new_set_with_probe_value <-
-                     {:set, :undefined, ["probe_value"], [], :undefined},
+                     {:set, [], ["probe_value"], [], :undefined},
                    :ok <-
                      :riakc_pb_socket.update_type(
                        connection_pid,
