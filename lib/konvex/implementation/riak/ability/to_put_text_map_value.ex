@@ -139,15 +139,12 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
               :ok,
               {
                 :map,
-                [
-                  {{<<_, _ :: binary>> = _entry_key, _entry_type}, <<_ :: binary>> = _entry_value}
-                  | _rest_entries
-                ] = fetched_map_entries,
+                fetched_map_entries,
                 [] = _uncommitted_added_map_entries,
                 [] = _uncommitted_removed_map_keys,
                 casual_context_that_has_to_be_preserved
               }
-            } when is_binary(casual_context_that_has_to_be_preserved) ->
+            } when is_list(fetched_map_entries) and is_binary(casual_context_that_has_to_be_preserved) ->
               {
                 :map,
                 fetched_map_entries,
