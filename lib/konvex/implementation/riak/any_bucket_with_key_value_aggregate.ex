@@ -80,6 +80,7 @@ defmodule Konvex.Implementation.Riak.AnyBucketWithKeyValueAggregate do
       def get_all_keys() do
         get_all_any_key_values()
         |> Map.keys()
+        |> MapSet.new()
       end
 
       @impl Konvex.Ability.ToPutAnyValue
