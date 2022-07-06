@@ -5,11 +5,11 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetAllKeys do
   """
   defmacro __using__(
              [
-               bucket_name: <<_, _ :: binary>> = _bucket_name,
+               bucket_name: _quoted_bucket_name,
                connection: quoted_riak_connection,
-               key_aggregate_bucket_name: <<_, _ :: binary>> = key_aggregate_bucket_name,
-               key_aggregate_bucket_key: <<_, _ :: binary>> = key_aggregate_bucket_key,
-               set_type_name: <<_, _ :: binary>> = set_type_name
+               key_aggregate_bucket_name: quoted_key_aggregate_bucket_name,
+               key_aggregate_bucket_key: quoted_key_aggregate_bucket_key,
+               set_type_name: quoted_set_type_name
              ]
            ) do
     quote do
@@ -17,9 +17,9 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetAllKeys do
 
       defmodule Private.Implementation.Ability.ToGetTextSetValue do
         use Konvex.Implementation.Riak.Ability.ToGetTextSetValue,
-            bucket_name: unquote(key_aggregate_bucket_name),
+            bucket_name: unquote(quoted_key_aggregate_bucket_name),
             connection: unquote(quoted_riak_connection),
-            set_type_name: unquote(set_type_name)
+            set_type_name: unquote(quoted_set_type_name)
       end
 
       @behaviour Konvex.Ability.ToGetAllKeys
@@ -28,12 +28,12 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetAllKeys do
       @spec get_all_keys() :: MapSet.t(key :: String.t)
       def get_all_keys() do
         case Private.Implementation.Ability.ToGetTextSetValue
-             .get_text_set_value(unquote(key_aggregate_bucket_key)) do
+             .get_text_set_value(unquote(quoted_key_aggregate_bucket_key)) do
           :key_not_found ->
             raise "To query all keys you have to set up storage aggregate: "
-                  <> "#{unquote(key_aggregate_bucket_name)}"
-                  <> "<#{unquote(set_type_name)}>"
-                     <> ":#{unquote(key_aggregate_bucket_key)}"
+                  <> "#{unquote(quoted_key_aggregate_bucket_name)}"
+                  <> "<#{unquote(quoted_set_type_name)}>"
+                     <> ":#{unquote(quoted_key_aggregate_bucket_key)}"
 
           %MapSet{} = all_keys ->
             all_keys

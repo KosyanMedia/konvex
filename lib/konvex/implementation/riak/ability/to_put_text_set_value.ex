@@ -1,9 +1,9 @@
 defmodule Konvex.Implementation.Riak.Ability.ToPutTextSetValue do
   defmacro __using__(
              [
-               bucket_name: <<_, _ :: binary>> = bucket_name,
+               bucket_name: quoted_bucket_name,
                connection: quoted_riak_connection,
-               set_type_name: <<_, _ :: binary>> = set_type_name
+               set_type_name: quoted_set_type_name
              ]
            ) do
     quote do
@@ -21,7 +21,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextSetValue do
         using unquote(quoted_riak_connection), fn connection_pid ->
           case :riakc_pb_socket.fetch_type(
                  connection_pid,
-                 {unquote(set_type_name), unquote(bucket_name)},
+                 {unquote(quoted_set_type_name), unquote(quoted_bucket_name)},
                  key
                ) do
             {
@@ -50,7 +50,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextSetValue do
               # In this case we have to remove every already present set value
               :riakc_pb_socket.update_type(
                 connection_pid,
-                {unquote(set_type_name), unquote(bucket_name)},
+                {unquote(quoted_set_type_name), unquote(quoted_bucket_name)},
                 key,
                 :riakc_set.to_op(
                   {:set, fetched_set_values, [], [fetched_set_values], casual_context_that_has_to_be_preserved}
@@ -67,7 +67,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextSetValue do
                    :ok <-
                      :riakc_pb_socket.update_type(
                        connection_pid,
-                       {unquote(set_type_name), unquote(bucket_name)},
+                       {unquote(quoted_set_type_name), unquote(quoted_bucket_name)},
                        key,
                        :riakc_set.to_op(new_set_with_probe_value)
                      ),
@@ -83,14 +83,14 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextSetValue do
                    } when is_binary(casual_context_that_has_to_be_preserved) <-
                      :riakc_pb_socket.fetch_type(
                        connection_pid,
-                       {unquote(set_type_name), unquote(bucket_name)},
+                       {unquote(quoted_set_type_name), unquote(quoted_bucket_name)},
                        key
                      ),
                    empty_set <-
                      :riakc_set.del_element("probe_value", persisted_new_set_with_probe_value) do
                 :riakc_pb_socket.update_type(
                   connection_pid,
-                  {unquote(set_type_name), unquote(bucket_name)},
+                  {unquote(quoted_set_type_name), unquote(quoted_bucket_name)},
                   key,
                   :riakc_set.to_op(empty_set)
                 )
@@ -98,7 +98,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextSetValue do
 
             {:error, riakc_pb_socket_fetch_type_error} ->
               object_locator =
-                "#{unquote(bucket_name)}<#{unquote(set_type_name)}>:#{key}"
+                "#{unquote(quoted_bucket_name)}<#{unquote(quoted_set_type_name)}>:#{key}"
               error_message =
                 inspect riakc_pb_socket_fetch_type_error
               raise "Failed to find #{object_locator} in Riak, :riakc_pb_socket.fetch_type/3 responded: #{error_message}"
@@ -114,7 +114,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextSetValue do
         using unquote(quoted_riak_connection), fn connection_pid ->
           case :riakc_pb_socket.fetch_type(
                  connection_pid,
-                 {unquote(set_type_name), unquote(bucket_name)},
+                 {unquote(quoted_set_type_name), unquote(quoted_bucket_name)},
                  key
                ) do
             {
@@ -136,7 +136,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextSetValue do
               else
                 :riakc_pb_socket.update_type(
                   connection_pid,
-                  {unquote(set_type_name), unquote(bucket_name)},
+                  {unquote(quoted_set_type_name), unquote(quoted_bucket_name)},
                   key,
                   :riakc_set.to_op(
                     {
@@ -159,14 +159,14 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextSetValue do
             {:error, {:notfound, :set}} ->
               :riakc_pb_socket.update_type(
                 connection_pid,
-                {unquote(set_type_name), unquote(bucket_name)},
+                {unquote(quoted_set_type_name), unquote(quoted_bucket_name)},
                 key,
                 :riakc_set.to_op({:set, :undefined, nonempty_set |> MapSet.to_list(), [], :undefined})
               )
 
             {:error, riakc_pb_socket_fetch_type_error} ->
               object_locator =
-                "#{unquote(bucket_name)}<#{unquote(set_type_name)}>:#{key}"
+                "#{unquote(quoted_bucket_name)}<#{unquote(quoted_set_type_name)}>:#{key}"
               error_message =
                 inspect riakc_pb_socket_fetch_type_error
               raise "Failed to find #{object_locator} in Riak, :riakc_pb_socket.fetch_type/3 responded: #{error_message}"
@@ -177,7 +177,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextSetValue do
 
                {:error, riakc_pb_socket_update_type_error} ->
                  object_locator =
-                   "#{unquote(bucket_name)}<#{unquote(set_type_name)}>:#{key}"
+                   "#{unquote(quoted_bucket_name)}<#{unquote(quoted_set_type_name)}>:#{key}"
                  error_message =
                    inspect riakc_pb_socket_update_type_error
                  raise "Failed to update #{object_locator} in Riak, :riakc_pb_socket.update_type/4 responded: #{error_message}"

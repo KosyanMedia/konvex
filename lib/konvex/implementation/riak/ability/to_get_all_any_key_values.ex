@@ -1,11 +1,11 @@
 defmodule Konvex.Implementation.Riak.Ability.ToGetAllAnyKeyValues do
   defmacro __using__(
              [
-               bucket_name: <<_, _ :: binary>> = bucket_name,
+               bucket_name: quoted_bucket_name,
                connection: quoted_riak_connection,
-               key_value_aggregate_bucket_name: <<_, _ :: binary>> = key_value_aggregate_bucket_name,
-               key_value_aggregate_bucket_key: <<_, _ :: binary>> = key_value_aggregate_bucket_key,
-               map_type_name: <<_, _ :: binary>> = map_type_name
+               key_value_aggregate_bucket_name: quoted_key_value_aggregate_bucket_name,
+               key_value_aggregate_bucket_key: quoted_key_value_aggregate_bucket_key,
+               map_type_name: quoted_map_type_name
              ]
            ) do
     quote do
@@ -13,11 +13,11 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetAllAnyKeyValues do
 
       defmodule Private.Implementation.Ability.ToGetAllTextKeyValues do
         use Konvex.Implementation.Riak.Ability.ToGetAllTextKeyValues,
-            bucket_name: unquote(bucket_name),
+            bucket_name: unquote(quoted_bucket_name),
             connection: unquote(quoted_riak_connection),
-            key_value_aggregate_bucket_name: unquote(key_value_aggregate_bucket_name),
-            key_value_aggregate_bucket_key: unquote(key_value_aggregate_bucket_key),
-            map_type_name: unquote(map_type_name)
+            key_value_aggregate_bucket_name: unquote(quoted_key_value_aggregate_bucket_name),
+            key_value_aggregate_bucket_key: unquote(quoted_key_value_aggregate_bucket_key),
+            map_type_name: unquote(quoted_map_type_name)
       end
 
       @behaviour Konvex.Ability.ToGetAllAnyKeyValues

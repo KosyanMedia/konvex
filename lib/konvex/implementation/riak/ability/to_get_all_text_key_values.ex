@@ -5,11 +5,11 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetAllTextKeyValues do
   """
   defmacro __using__(
              [
-               bucket_name: <<_, _ :: binary>> = _bucket_name,
+               bucket_name: _quoted_bucket_name,
                connection: quoted_riak_connection,
-               key_value_aggregate_bucket_name: <<_, _ :: binary>> = key_value_aggregate_bucket_name,
-               key_value_aggregate_bucket_key: <<_, _ :: binary>> = key_value_aggregate_bucket_key,
-               map_type_name: <<_, _ :: binary>> = map_type_name
+               key_value_aggregate_bucket_name: quoted_key_value_aggregate_bucket_name,
+               key_value_aggregate_bucket_key: quoted_key_value_aggregate_bucket_key,
+               map_type_name: quoted_map_type_name
              ]
            ) do
     quote do
@@ -17,9 +17,9 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetAllTextKeyValues do
 
       defmodule Private.Implementation.Ability.ToGetTextMapValue do
         use Konvex.Implementation.Riak.Ability.ToGetTextMapValue,
-            bucket_name: unquote(key_value_aggregate_bucket_name),
+            bucket_name: unquote(quoted_key_value_aggregate_bucket_name),
             connection: unquote(quoted_riak_connection),
-            map_type_name: unquote(map_type_name)
+            map_type_name: unquote(quoted_map_type_name)
       end
 
       @behaviour Konvex.Ability.ToGetAllTextKeyValues
@@ -28,12 +28,12 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetAllTextKeyValues do
       @spec get_all_text_key_values() :: %{key :: String.t => value :: String.t}
       def get_all_text_key_values() do
         case Private.Implementation.Ability.ToGetTextMapValue
-             .get_text_map_value(unquote(key_value_aggregate_bucket_key)) do
+             .get_text_map_value(unquote(quoted_key_value_aggregate_bucket_key)) do
           :key_not_found ->
             raise "To query all text key values you have to set up storage aggregate: "
-                  <> "#{unquote(key_value_aggregate_bucket_name)}"
-                  <> "<#{unquote(map_type_name)}>"
-                     <> ":#{unquote(key_value_aggregate_bucket_key)}"
+                  <> "#{unquote(quoted_key_value_aggregate_bucket_name)}"
+                  <> "<#{unquote(quoted_map_type_name)}>"
+                     <> ":#{unquote(quoted_key_value_aggregate_bucket_key)}"
 
           %{} = all_text_key_values ->
             all_text_key_values

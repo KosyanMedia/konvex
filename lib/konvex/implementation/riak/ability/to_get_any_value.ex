@@ -1,8 +1,8 @@
 defmodule Konvex.Implementation.Riak.Ability.ToGetAnyValue do
   defmacro __using__(
              [
-               bucket_name: <<_, _ :: binary>> = bucket_name,
-               conflict_resolution_strategy_module: conflict_resolution_strategy_module,
+               bucket_name: quoted_bucket_name,
+               conflict_resolution_strategy_module: quoted_conflict_resolution_strategy_module,
                connection: quoted_riak_connection
              ]
            ) do
@@ -11,8 +11,8 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetAnyValue do
 
       defmodule Private.Implementation.Ability.ToGetTextValue do
         use Konvex.Implementation.Riak.Ability.ToGetTextValue,
-            bucket_name: unquote(bucket_name),
-            conflict_resolution_strategy_module: unquote(conflict_resolution_strategy_module),
+            bucket_name: unquote(quoted_bucket_name),
+            conflict_resolution_strategy_module: unquote(quoted_conflict_resolution_strategy_module),
             connection: unquote(quoted_riak_connection)
       end
 

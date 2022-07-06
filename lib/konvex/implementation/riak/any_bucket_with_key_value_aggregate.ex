@@ -6,12 +6,12 @@ defmodule Konvex.Implementation.Riak.AnyBucketWithKeyValueAggregate do
   """
   defmacro __using__(
              [
-               bucket_name: <<_, _ :: binary>> = bucket_name,
-               conflict_resolution_strategy_module: conflict_resolution_strategy_module,
+               bucket_name: quoted_bucket_name,
+               conflict_resolution_strategy_module: quoted_conflict_resolution_strategy_module,
                connection: quoted_riak_connection,
-               key_value_aggregate_bucket_name: <<_, _ :: binary>> = key_value_aggregate_bucket_name,
-               key_value_aggregate_bucket_key: <<_, _ :: binary>> = key_value_aggregate_bucket_key,
-               map_type_name: <<_, _ :: binary>> = map_type_name
+               key_value_aggregate_bucket_name: quoted_key_value_aggregate_bucket_name,
+               key_value_aggregate_bucket_key: quoted_key_value_aggregate_bucket_key,
+               map_type_name: quoted_map_type_name
              ]
            ) do
     quote do
@@ -20,45 +20,45 @@ defmodule Konvex.Implementation.Riak.AnyBucketWithKeyValueAggregate do
       @behaviour Konvex.Ability.ToPutAnyValue
 
       use Konvex.Implementation.Riak.Ability.ToCheckKeyExists,
-          bucket_name: unquote(bucket_name),
+          bucket_name: unquote(quoted_bucket_name),
           connection: unquote(quoted_riak_connection),
           value_type: :text
       use Konvex.Implementation.Riak.Ability.ToGetAllAnyKeyValues,
-          bucket_name: unquote(bucket_name),
+          bucket_name: unquote(quoted_bucket_name),
           connection: unquote(quoted_riak_connection),
-          key_value_aggregate_bucket_name: unquote(key_value_aggregate_bucket_name),
-          key_value_aggregate_bucket_key: unquote(key_value_aggregate_bucket_key),
-          map_type_name: unquote(map_type_name)
+          key_value_aggregate_bucket_name: unquote(quoted_key_value_aggregate_bucket_name),
+          key_value_aggregate_bucket_key: unquote(quoted_key_value_aggregate_bucket_key),
+          map_type_name: unquote(quoted_map_type_name)
       use Konvex.Implementation.Riak.Ability.ToGetAnyValue,
-          bucket_name: unquote(bucket_name),
-          conflict_resolution_strategy_module: unquote(conflict_resolution_strategy_module),
+          bucket_name: unquote(quoted_bucket_name),
+          conflict_resolution_strategy_module: unquote(quoted_conflict_resolution_strategy_module),
           connection: unquote(quoted_riak_connection)
 
       defmodule Private.Implementation.Ability.ToDeleteKey do
         use Konvex.Implementation.Riak.Ability.ToDeleteKey,
-            bucket_name: unquote(bucket_name),
+            bucket_name: unquote(quoted_bucket_name),
             connection: unquote(quoted_riak_connection),
             value_type: :text
       end
 
       defmodule Private.Implementation.Ability.ToPutAnyValue do
         use Konvex.Implementation.Riak.Ability.ToPutAnyValue,
-            bucket_name: unquote(bucket_name),
+            bucket_name: unquote(quoted_bucket_name),
             connection: unquote(quoted_riak_connection)
       end
 
       defmodule Private.Implementation.Ability.ToPutValueToTextMapValue do
         use Konvex.Implementation.Riak.Ability.ToPutValueToTextMapValue,
-            bucket_name: unquote(key_value_aggregate_bucket_name),
+            bucket_name: unquote(quoted_key_value_aggregate_bucket_name),
             connection: unquote(quoted_riak_connection),
-            map_type_name: unquote(map_type_name)
+            map_type_name: unquote(quoted_map_type_name)
       end
 
       defmodule Private.Implementation.Ability.ToRemoveKeyFromMapValue do
         use Konvex.Implementation.Riak.Ability.ToRemoveKeyFromMapValue,
-            bucket_name: unquote(key_value_aggregate_bucket_name),
+            bucket_name: unquote(quoted_key_value_aggregate_bucket_name),
             connection: unquote(quoted_riak_connection),
-            map_type_name: unquote(map_type_name)
+            map_type_name: unquote(quoted_map_type_name)
       end
 
       @impl Konvex.Ability.ToDeleteKey
@@ -68,7 +68,7 @@ defmodule Konvex.Implementation.Riak.AnyBucketWithKeyValueAggregate do
                Private.Implementation.Ability.ToDeleteKey.delete_key(key),
              :unit <-
                Private.Implementation.Ability.ToRemoveKeyFromMapValue.remove_key_from_map_value(
-                 unquote(key_value_aggregate_bucket_key),
+                 unquote(quoted_key_value_aggregate_bucket_key),
                  key
                ) do
           :unit
@@ -90,7 +90,7 @@ defmodule Konvex.Implementation.Riak.AnyBucketWithKeyValueAggregate do
                Private.Implementation.Ability.ToPutAnyValue.put_any_value(key, value),
              :unit <-
                Private.Implementation.Ability.ToPutValueToTextMapValue.put_value_to_text_map_value(
-                 unquote(key_value_aggregate_bucket_key),
+                 unquote(quoted_key_value_aggregate_bucket_key),
                  key,
                  :erlang.term_to_binary(value)
                ) do

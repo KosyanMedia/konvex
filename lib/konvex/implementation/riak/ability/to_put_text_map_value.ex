@@ -1,9 +1,9 @@
 defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
   defmacro __using__(
              [
-               bucket_name: <<_, _ :: binary>> = bucket_name,
+               bucket_name: quoted_bucket_name,
                connection: quoted_riak_connection,
-               map_type_name: <<_, _ :: binary>> = map_type_name
+               map_type_name: quoted_map_type_name
              ]
            ) do
     quote do
@@ -21,7 +21,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
         using unquote(quoted_riak_connection), fn connection_pid ->
           case :riakc_pb_socket.fetch_type(
                  connection_pid,
-                 {unquote(map_type_name), unquote(bucket_name)},
+                 {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
                  key
                ) do
             {
@@ -50,7 +50,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
               # In this case we have to remove every already present map entry
               :riakc_pb_socket.update_type(
                 connection_pid,
-                {unquote(map_type_name), unquote(bucket_name)},
+                {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
                 key,
                 :riakc_map.to_op(
                   {
@@ -85,7 +85,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
                    :ok <-
                      :riakc_pb_socket.update_type(
                        connection_pid,
-                       {unquote(map_type_name), unquote(bucket_name)},
+                       {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
                        key,
                        :riakc_map.to_op(new_map_with_probe_entry)
                      ),
@@ -101,14 +101,14 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
                    } when is_binary(casual_context_that_has_to_be_preserved) <-
                      :riakc_pb_socket.fetch_type(
                        connection_pid,
-                       {unquote(map_type_name), unquote(bucket_name)},
+                       {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
                        key
                      ),
                    empty_map <-
                      :riakc_map.erase(probe_entry_key, persisted_new_map_with_probe_entry) do
                 :riakc_pb_socket.update_type(
                   connection_pid,
-                  {unquote(map_type_name), unquote(bucket_name)},
+                  {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
                   key,
                   :riakc_map.to_op(empty_map)
                 )
@@ -116,7 +116,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
 
             {:error, riakc_pb_socket_fetch_type_error} ->
               object_locator =
-                "#{unquote(bucket_name)}<#{unquote(map_type_name)}>:#{key}"
+                "#{unquote(quoted_bucket_name)}<#{unquote(quoted_map_type_name)}>:#{key}"
               error_message =
                 inspect riakc_pb_socket_fetch_type_error
               raise "Failed to find #{object_locator} in Riak, :riakc_pb_socket.fetch_type/3 responded: #{error_message}"
@@ -132,7 +132,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
         using unquote(quoted_riak_connection), fn connection_pid ->
           case :riakc_pb_socket.fetch_type(
                  connection_pid,
-                 {unquote(map_type_name), unquote(bucket_name)},
+                 {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
                  key
                ) do
             {
@@ -165,7 +165,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
 
             {:error, riakc_pb_socket_fetch_type_error} ->
               object_locator =
-                "#{unquote(bucket_name)}<#{unquote(map_type_name)}>:#{key}"
+                "#{unquote(quoted_bucket_name)}<#{unquote(quoted_map_type_name)}>:#{key}"
               error_message =
                 inspect riakc_pb_socket_fetch_type_error
               raise "Failed to find #{object_locator} in Riak, :riakc_pb_socket.fetch_type/3 responded: #{error_message}"
@@ -192,7 +192,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
                fn new_map ->
                  :riakc_pb_socket.update_type(
                    connection_pid,
-                   {unquote(map_type_name), unquote(bucket_name)},
+                   {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
                    key,
                    :riakc_map.to_op(new_map)
                  )
