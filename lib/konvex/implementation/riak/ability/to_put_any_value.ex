@@ -1,7 +1,7 @@
 defmodule Konvex.Implementation.Riak.Ability.ToPutAnyValue do
   defmacro __using__(
              [
-               bucket_name: <<_, _ :: binary>> = bucket_name,
+               bucket_name: quoted_bucket_name,
                connection: quoted_riak_connection
              ]
            ) do
@@ -10,7 +10,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutAnyValue do
 
       defmodule Private.Implementation.Ability.ToPutTextValue do
         use Konvex.Implementation.Riak.Ability.ToPutTextValue,
-            bucket_name: unquote(bucket_name),
+            bucket_name: unquote(quoted_bucket_name),
             connection: unquote(quoted_riak_connection)
       end
 

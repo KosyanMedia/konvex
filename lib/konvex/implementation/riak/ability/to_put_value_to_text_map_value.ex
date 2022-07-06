@@ -1,9 +1,9 @@
 defmodule Konvex.Implementation.Riak.Ability.ToPutValueToTextMapValue do
   defmacro __using__(
              [
-               bucket_name: <<_, _ :: binary>> = bucket_name,
+               bucket_name: quoted_bucket_name,
                connection: quoted_riak_connection,
-               map_type_name: <<_, _ :: binary>> = map_type_name
+               map_type_name: quoted_map_type_name
              ]
            ) do
     quote do
@@ -24,7 +24,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutValueToTextMapValue do
         using unquote(quoted_riak_connection), fn connection_pid ->
           case :riakc_pb_socket.fetch_type(
                  connection_pid,
-                 {unquote(map_type_name), unquote(bucket_name)},
+                 {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
                  key
                ) do
             {
@@ -47,7 +47,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutValueToTextMapValue do
                      ) do
                 :riakc_pb_socket.update_type(
                   connection_pid,
-                  {unquote(map_type_name), unquote(bucket_name)},
+                  {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
                   key,
                   :riakc_map.to_op(updated_fetched_map)
                 )
@@ -58,7 +58,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutValueToTextMapValue do
 
                    {:error, riakc_pb_socket_update_type_error} ->
                      object_locator =
-                       "#{unquote(bucket_name)}<#{unquote(map_type_name)}>:#{key}"
+                       "#{unquote(quoted_bucket_name)}<#{unquote(quoted_map_type_name)}>:#{key}"
                      error_message =
                        inspect riakc_pb_socket_update_type_error
                      raise "Failed to update #{object_locator} in Riak, :riakc_pb_socket.update_type/4 responded: #{error_message}"
@@ -69,7 +69,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutValueToTextMapValue do
 
             {:error, riakc_pb_socket_fetch_type_error} ->
               object_locator =
-                "#{unquote(bucket_name)}<#{unquote(map_type_name)}>:#{key}"
+                "#{unquote(quoted_bucket_name)}<#{unquote(quoted_map_type_name)}>:#{key}"
               error_message =
                 inspect riakc_pb_socket_fetch_type_error
               raise "Failed to find #{object_locator} in Riak, :riakc_pb_socket.fetch_type/3 responded: #{error_message}"
