@@ -97,6 +97,8 @@ defmodule Konvex.Implementation.Riak.AnyBucketWithKeyValueAggregate do
           :unit
         end
       end
+
+      defoverridable get_all_any_key_values: 0, get_any_value: 1
     end
   end
 end
