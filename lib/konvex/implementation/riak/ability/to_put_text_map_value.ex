@@ -74,45 +74,45 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
               # This can't be accomplished using :riakc itself
               # (library forbids "unmodified commits", see to_op/1, update_type/5, etc.)
               # So we workaround this by creating a map with probe entry and then remove it from the map
-              with new_map_with_probe_entry <-
-                     {
-                       :map,
-                       [],
-                       [{{"probe_key", :register}, {:register, :undefined, "probe_value"}}],
-                       [],
-                       :undefined
-                     },
-                   :ok <-
-                     :riakc_pb_socket.update_type(
-                       connection_pid,
-                       {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
-                       key,
-                       :riakc_map.to_op(new_map_with_probe_entry)
-                     ),
-                   {
-                     :ok,
-                     {
-                       :map,
-                       [{{"probe_key", :register} = probe_entry_key, "probe_value"}],
-                       [] = _uncommitted_added_map_entries,
-                       [] = _uncommitted_removed_map_keys,
-                       casual_context_that_has_to_be_preserved
-                     } = persisted_new_map_with_probe_entry
-                   } when is_binary(casual_context_that_has_to_be_preserved) <-
-                     :riakc_pb_socket.fetch_type(
-                       connection_pid,
-                       {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
-                       key
-                     ),
-                   empty_map <-
-                     :riakc_map.erase(probe_entry_key, persisted_new_map_with_probe_entry) do
+              new_map_with_probe_entry =
+                {
+                  :map,
+                  [],
+                  [{{"probe_key", :register}, {:register, :undefined, "probe_value"}}],
+                  [],
+                  :undefined
+                }
+              :ok =
                 :riakc_pb_socket.update_type(
                   connection_pid,
                   {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
                   key,
-                  :riakc_map.to_op(empty_map)
+                  :riakc_map.to_op(new_map_with_probe_entry)
                 )
-              end
+              {
+                :ok,
+                {
+                  :map,
+                  [{{"probe_key", :register} = probe_entry_key, "probe_value"}],
+                  [] = _uncommitted_added_map_entries,
+                  [] = _uncommitted_removed_map_keys,
+                  <<_ :: binary()>> = casual_context_that_has_to_be_preserved
+                } = persisted_new_map_with_probe_entry
+              } =
+                :riakc_pb_socket.fetch_type(
+                  connection_pid,
+                  {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
+                  key
+                )
+              empty_map =
+                :riakc_map.erase(probe_entry_key, persisted_new_map_with_probe_entry)
+
+              :riakc_pb_socket.update_type(
+                connection_pid,
+                {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
+                key,
+                :riakc_map.to_op(empty_map)
+              )
 
             {:error, riakc_pb_socket_fetch_type_error} ->
               object_locator =

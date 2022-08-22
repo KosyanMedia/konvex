@@ -37,21 +37,20 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutValueToTextMapValue do
                 casual_context_that_has_to_be_preserved
               } = fetched_map
             } when is_list(fetched_map_entries) and is_binary(casual_context_that_has_to_be_preserved) ->
-              with updated_fetched_map <-
-                     :riakc_map.update(
-                       {map_key, :register},
-                       fn {:register, old_value, :undefined} when is_binary(old_value) ->
-                         {:register, old_value, value}
-                       end,
-                       fetched_map
-                     ) do
-                :riakc_pb_socket.update_type(
-                  connection_pid,
-                  {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
-                  key,
-                  :riakc_map.to_op(updated_fetched_map)
+              :riakc_pb_socket.update_type(
+                connection_pid,
+                {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
+                key,
+                :riakc_map.to_op(
+                  :riakc_map.update(
+                    {map_key, :register},
+                    fn {:register, old_value, :undefined} when is_binary(old_value) ->
+                      {:register, old_value, value}
+                    end,
+                    fetched_map
+                  )
                 )
-              end
+              )
               |> case do
                    :ok ->
                      :unit
