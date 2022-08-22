@@ -42,33 +42,24 @@ defmodule Konvex.Implementation.Riak.Ability.ToRemoveKeyFromMapValue do
                 casual_context_that_has_to_be_preserved
               }
             } when is_list(fetched_map_entries) and is_binary(casual_context_that_has_to_be_preserved) ->
-              with updated_fetched_map <-
-                     {
-                       :map,
-                       fetched_map_entries,
-                       [],
-                       [],
-                       casual_context_that_has_to_be_preserved
-                     } do
-                :riakc_pb_socket.update_type(
-                  connection_pid,
-                  {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
-                  key,
-                  :riakc_map.to_op(
-                    {
-                      :map,
-                      fetched_map_entries,
-                      [],
-                      # There is no apriori information about map_key value type
-                      # so to satisfy semantics of the ability
-                      # we have to remove each (CRDT) one
-                      [:counter, :flag, :map, :register, :set]
-                      |> Enum.map(fn crdt_type -> {map_key, crdt_type} end),
-                      casual_context_that_has_to_be_preserved
-                    }
-                  )
+              :riakc_pb_socket.update_type(
+                connection_pid,
+                {unquote(quoted_map_type_name), unquote(quoted_bucket_name)},
+                key,
+                :riakc_map.to_op(
+                  {
+                    :map,
+                    fetched_map_entries,
+                    [],
+                    # There is no apriori information about map_key value type
+                    # so to satisfy semantics of the ability
+                    # we have to remove each (CRDT) one
+                    [:counter, :flag, :map, :register, :set]
+                    |> Enum.map(fn crdt_type -> {map_key, crdt_type} end),
+                    casual_context_that_has_to_be_preserved
+                  }
                 )
-              end
+              )
               |> case do
                    :ok ->
                      :unit

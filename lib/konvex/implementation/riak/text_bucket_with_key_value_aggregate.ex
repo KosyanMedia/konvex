@@ -64,15 +64,13 @@ defmodule Konvex.Implementation.Riak.TextBucketWithKeyValueAggregate do
       @impl Konvex.Ability.ToDeleteKey
       @spec delete_key(key :: String.t) :: :unit
       def delete_key(key) when is_binary(key) do
-        with :unit <-
-               Private.Implementation.Ability.ToDeleteKey.delete_key(key),
-             :unit <-
-               Private.Implementation.Ability.ToRemoveKeyFromMapValue.remove_key_from_map_value(
-                 unquote(quoted_key_value_aggregate_bucket_key),
-                 key
-               ) do
-          :unit
-        end
+        :unit =
+          Private.Implementation.Ability.ToDeleteKey.delete_key(key)
+        :unit =
+          Private.Implementation.Ability.ToRemoveKeyFromMapValue.remove_key_from_map_value(
+            unquote(quoted_key_value_aggregate_bucket_key),
+            key
+          )
       end
 
       @impl Konvex.Ability.ToGetAllKeys
@@ -85,16 +83,14 @@ defmodule Konvex.Implementation.Riak.TextBucketWithKeyValueAggregate do
       @impl Konvex.Ability.ToPutTextValue
       @spec put_text_value(key :: String.t, value :: String.t) :: :unit
       def put_text_value(key, value) when is_binary(key) and is_binary(value) do
-        with :unit <-
-               Private.Implementation.Ability.ToPutTextValue.put_text_value(key, value),
-             :unit <-
-               Private.Implementation.Ability.ToPutValueToTextMapValue.put_value_to_text_map_value(
-                 unquote(quoted_key_value_aggregate_bucket_key),
-                 key,
-                 value
-               ) do
-          :unit
-        end
+        :unit =
+          Private.Implementation.Ability.ToPutTextValue.put_text_value(key, value)
+        :unit =
+          Private.Implementation.Ability.ToPutValueToTextMapValue.put_value_to_text_map_value(
+            unquote(quoted_key_value_aggregate_bucket_key),
+            key,
+            value
+          )
       end
     end
   end

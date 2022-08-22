@@ -21,9 +21,12 @@ defmodule Konvex.Implementation.Riak.Ability.ToGetAnyValue do
       @impl Konvex.Ability.ToGetAnyValue
       @spec get_any_value(key :: String.t) :: :key_not_found | any
       def get_any_value(key) when is_binary(key) do
-        with binary_value when is_binary(binary_value)
-             <- Private.Implementation.Ability.ToGetTextValue.get_text_value(key) do
-          :erlang.binary_to_term(binary_value)
+        case Private.Implementation.Ability.ToGetTextValue.get_text_value(key) do
+          :key_not_found ->
+            :key_not_found
+
+          binary_value when is_binary(binary_value) ->
+            :erlang.binary_to_term(binary_value)
         end
       end
     end

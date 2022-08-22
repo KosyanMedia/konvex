@@ -62,39 +62,39 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextSetValue do
               # This can't be accomplished using :riakc itself
               # (library forbids "unmodified commits", see to_op/1, update_type/5, etc.)
               # So we workaround this by creating a set with probe value and then remove it from the set
-              with new_set_with_probe_value <-
-                     {:set, [], ["probe_value"], [], :undefined},
-                   :ok <-
-                     :riakc_pb_socket.update_type(
-                       connection_pid,
-                       {unquote(quoted_set_type_name), unquote(quoted_bucket_name)},
-                       key,
-                       :riakc_set.to_op(new_set_with_probe_value)
-                     ),
-                   {
-                     :ok,
-                     {
-                       :set,
-                       ["probe_value"],
-                       [] = _uncommitted_added_set_values,
-                       [] = _uncommitted_removed_set_values,
-                       casual_context_that_has_to_be_preserved
-                     } = persisted_new_set_with_probe_value
-                   } when is_binary(casual_context_that_has_to_be_preserved) <-
-                     :riakc_pb_socket.fetch_type(
-                       connection_pid,
-                       {unquote(quoted_set_type_name), unquote(quoted_bucket_name)},
-                       key
-                     ),
-                   empty_set <-
-                     :riakc_set.del_element("probe_value", persisted_new_set_with_probe_value) do
+              new_set_with_probe_value =
+                {:set, [], ["probe_value"], [], :undefined}
+              :ok =
                 :riakc_pb_socket.update_type(
                   connection_pid,
                   {unquote(quoted_set_type_name), unquote(quoted_bucket_name)},
                   key,
-                  :riakc_set.to_op(empty_set)
+                  :riakc_set.to_op(new_set_with_probe_value)
                 )
-              end
+              {
+                :ok,
+                {
+                  :set,
+                  ["probe_value"],
+                  [] = _uncommitted_added_set_values,
+                  [] = _uncommitted_removed_set_values,
+                  <<_ :: binary()>> = casual_context_that_has_to_be_preserved
+                } = persisted_new_set_with_probe_value
+              } =
+                :riakc_pb_socket.fetch_type(
+                  connection_pid,
+                  {unquote(quoted_set_type_name), unquote(quoted_bucket_name)},
+                  key
+                )
+              empty_set =
+                :riakc_set.del_element("probe_value", persisted_new_set_with_probe_value)
+
+              :riakc_pb_socket.update_type(
+                connection_pid,
+                {unquote(quoted_set_type_name), unquote(quoted_bucket_name)},
+                key,
+                :riakc_set.to_op(empty_set)
+              )
 
             {:error, riakc_pb_socket_fetch_type_error} ->
               object_locator =
