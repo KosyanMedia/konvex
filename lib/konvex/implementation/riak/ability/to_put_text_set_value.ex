@@ -53,7 +53,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextSetValue do
                 {unquote(quoted_set_type_name), unquote(quoted_bucket_name)},
                 key,
                 :riakc_set.to_op(
-                  {:set, fetched_set_values, [], [fetched_set_values], casual_context_that_has_to_be_preserved}
+                  {:set, fetched_set_values, [], fetched_set_values, casual_context_that_has_to_be_preserved}
                 )
               )
 
