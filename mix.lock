@@ -1,4 +1,5 @@
 %{
-  "riak_pb": {:git, "https://github.com/basho/riak_pb.git", "46d5f4d1b899fbde4357f9d777a8c71d8ac66a35", [ref: "46d5f4d1b899fbde4357f9d777a8c71d8ac66a35"]},
-  "riakc": {:git, "https://github.com/basho/riak-erlang-client.git", "d9fa46335fda4704fda71cbc011ab6a11e50e3f3", [tag: "3.0.8+p1"]},
+  "riak_dt": {:git, "https://github.com/basho/riak_dt.git", "c2a3e1b8e3bc6f586f181558396683137ebe8c87", [ref: "c2a3e1b8e3bc6f586f181558396683137ebe8c87"]},
+  "riak_pb": {:git, "https://github.com/basho/riak_pb.git", "7a5e535217c13a32f3041888b0d46e9b4476065c", [ref: "7a5e535217c13a32f3041888b0d46e9b4476065c"]},
+  "riakc": {:git, "https://github.com/basho/riak-erlang-client.git", "3b6ad6e92dcb55833e9add829b2871be8468a68e", [tag: "3.0.13"]},
 }

@@ -20,8 +20,8 @@ defmodule Konvex.MixProject do
   defp deps do
     [
       # FIXME: This is a workaround to force skip :protobuffs transitive dependency
-      {:riak_pb, github: "basho/riak_pb", ref: "46d5f4d1b899fbde4357f9d777a8c71d8ac66a35", override: true},
-      {:riakc, github: "basho/riak-erlang-client", tag: "3.0.8+p1"}
+      {:riak_pb, github: "basho/riak_pb", ref: "7a5e535217c13a32f3041888b0d46e9b4476065c", override: true},
+      {:riakc, github: "basho/riak-erlang-client", tag: "3.0.13"}
     ]
   end
 end
