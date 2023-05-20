@@ -1,4 +1,6 @@
 %{
+  "bindable": {:hex, :bindable, "0.1.0", "aedc0e2957c45f09d8b464c9724a88a7e29e98f86eea76b10be687b61dd13ddc", [:mix], [], "hexpm", "7b85a6db8148c4a00cd788acc38db03642392609fd22fe1cf78e573e6a76d853"},
+  "resource": {:hex, :resource, "0.1.0", "56bb36a7b36000a362e56669ce0f7050b9f717223c6d3f7afc786cc0d86a1af2", [:mix], [{:bindable, "~> 0.1.0", [hex: :bindable, repo: "hexpm", optional: false]}], "hexpm", "3065dfa8ba1c6946a42513c6d72338bf1b63a4d3f65c5e693280e877e11f6189"},
   "riak_pb": {:git, "https://github.com/basho/riak_pb.git", "46d5f4d1b899fbde4357f9d777a8c71d8ac66a35", [ref: "46d5f4d1b899fbde4357f9d777a8c71d8ac66a35"]},
   "riakc": {:git, "https://github.com/basho/riak-erlang-client.git", "d9fa46335fda4704fda71cbc011ab6a11e50e3f3", [tag: "3.0.8+p1"]},
 }

@@ -19,6 +19,7 @@ defmodule Konvex.MixProject do
 
   defp deps do
     [
+      {:resource, "~> 0.1.0"},
       # FIXME: This is a workaround to force skip :protobuffs transitive dependency
       {
         :riak_pb,
