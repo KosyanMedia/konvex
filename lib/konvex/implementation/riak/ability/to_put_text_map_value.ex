@@ -96,7 +96,7 @@ defmodule Konvex.Implementation.Riak.Ability.ToPutTextMapValue do
                   [{{"probe_key", :register} = probe_entry_key, "probe_value"}],
                   [] = _uncommitted_added_map_entries,
                   [] = _uncommitted_removed_map_keys,
-                  <<_ :: binary()>> = casual_context_that_has_to_be_preserved
+                  <<_ :: binary>> = casual_context_that_has_to_be_preserved
                 } = persisted_new_map_with_probe_entry
               } =
                 :riakc_pb_socket.fetch_type(
